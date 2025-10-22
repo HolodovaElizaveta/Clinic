@@ -1,0 +1,54 @@
+<!-- clinic/templates/clinic/base.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Медицинский центр{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'clinic/css/style.css' %}">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo">MEDCLINIC</a>
+                <nav class="nav">
+                    <a href="#doctors" class="nav-link">Наши врачи</a>
+                    <a href="#clinics" class="nav-link">Клиники</a>
+                    <a href="#" class="nav-link">Услуги</a>
+                    <a href="#" class="nav-link">Контакты</a>
+                </nav>
+
+                <div class="auth-buttons">
+                    {% if user.is_authenticated %}
+                        <span class="welcome">Привет, {{ user.get_full_name|default:user.username }}!</span>
+                        <a href="/admin/" class="btn btn-primary">Админка</a>
+                        <a href="{% url 'logout' %}" class="btn btn-outline">Выйти</a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-primary">Вход</a>
+                        <a href="{% url 'register' %}" class="btn btn-outline">Регистрация</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основное содержимое -->
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Подвал -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 MEDCLINIC. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <!-- jQuery и Bootstrap (если нужно) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'clinic/js/main.js' %}"></script>
+</body>
+</html>

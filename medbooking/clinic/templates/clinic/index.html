@@ -1,0 +1,101 @@
+<!-- clinic/templates/clinic/index.html -->
+{% extends 'clinic/base.html' %}
+
+{% block title %}Главная | MEDCLINIC{% endblock %}
+
+{% block content %}
+    <!-- Геро-секция -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>МЫ ЗАБОТИМСЯ О ВАШЕМ ЗДОРОВЬЕ ❤️</h1>
+                <p>Современный медицинский центр с квалифицированными специалистами и новейшим оборудованием.</p>
+                <div class="hero-buttons">
+                   
+                    <a href="#" class="btn btn-outline">Задать вопрос</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="https://via.placeholder.com/600x400?text=Команда+врачей" alt="Команда врачей">
+            </div>
+        </div>
+    </section>
+
+    <!-- Блок "НАШИ ВРАЧИ" -->
+    <section id="doctors" class="doctors-section">
+        <div class="container">
+            <h2>НАШИ ВРАЧИ</h2>
+            <p>Квалифицированные специалисты, готовые оказать помощь каждому пациенту.</p>
+
+            <!-- Фильтр по специализации -->
+            <div class="filter-container">
+                <label for="specialization-filter">Фильтр по специализации:</label>
+                <select id="specialization-filter" onchange="filterDoctors()">
+                    <option value="">Все специализации</option>
+                    {% for spec in specializations %}
+                        <option value="{{ spec }}">{{ spec }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Карусель врачей -->
+            <div class="doctors-carousel">
+                <button class="carousel-arrow left" onclick="scrollDoctors(-1)">&#10094;</button>
+                <div class="doctors-wrapper" id="doctors-wrapper">
+                    {% for doctor in doctors %}
+                        <div class="doctor-card" data-specialization="{{ doctor.specialization }}">
+                            <div class="doctor-photo">
+                                {% if doctor.photo_url %}
+                                    <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}">
+                                {% else %}
+                                    <img src="https://via.placeholder.com/150?text=Врач" alt="Фото врача">
+                                {% endif %}
+                            </div>
+                            <div class="doctor-info">
+                                <h3>{{ doctor.full_name }}</h3>
+                                <p class="specialization">{{ doctor.specialization }}</p>
+                                <p class="experience">Стаж: {{ doctor.experience_years }} лет</p>
+                                <p class="bio">{{ doctor.bio|truncatechars:80 }}</p>
+                               
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-arrow right" onclick="scrollDoctors(1)">&#10095;</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Блок "КЛИНИКИ" -->
+    <section id="clinics" class="clinics-section">
+        <div class="container">
+            <h2>НАШИ КЛИНИКИ</h2>
+            <p>Современные медицинские центры в удобных локациях.</p>
+
+            <!-- Карусель клиник -->
+            <div class="clinics-carousel">
+                <button class="carousel-arrow left" onclick="scrollClinics(-1)">&#10094;</button>
+                <div class="clinics-wrapper" id="clinics-wrapper">
+                    {% for clinic in clinics %}
+                        <div class="clinic-card">
+                            <div class="clinic-photo">
+                                {% if clinic.photo_url %}
+                                    <img src="{{ clinic.photo_url }}" alt="{{ clinic.name }}">
+                                {% else %}
+                                    <img src="https://via.placeholder.com/200x150?text=Клиника" alt="Фото клиники">
+                                {% endif %}
+                            </div>
+                            <div class="clinic-info">
+                                <h3>{{ clinic.name }}</h3>
+                                <p class="address">{{ clinic.address|truncatechars:50 }}</p>
+                                <p class="phone">{{ clinic.phone }}</p>
+                                
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-arrow right" onclick="scrollClinics(1)">&#10095;</button>
+            </div>
+        </div>
+    </section>
+{% endblock %}
