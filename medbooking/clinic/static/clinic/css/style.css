@@ -12,13 +12,64 @@ body {
     background-color: #f8f9fa;
 }
 
+/* Типографика */
+h1, h2, h3 {
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.3rem; }
+
+p { font-size: 1rem; color: #555; }
+
+/* Кнопки */
+.btn {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    background: transparent;
+    color: #007bff;
+    border: 2px solid #007bff;
+}
+
+.btn-outline:hover {
+    background: #e7f2ff;
+    transform: translateY(-2px);
+}
+
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}
+
 /* Шапка */
 .header {
-    background-color: #fff;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    background: white;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: 100;
 }
 
 .header-content {
@@ -26,11 +77,13 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .logo {
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-size: 1.8rem;
+    font-weight: 800;
     color: #007bff;
     text-decoration: none;
 }
@@ -42,7 +95,7 @@ body {
 
 .nav-link {
     text-decoration: none;
-    color: #333;
+    color: #444;
     font-weight: 500;
     transition: color 0.2s;
 }
@@ -53,97 +106,60 @@ body {
 
 .auth-buttons {
     display: flex;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 1rem;
 }
 
 .welcome {
-    margin-right: 1rem;
     font-weight: 500;
-}
-
-.btn {
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    text-decoration: none;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background-color: #007bff;
-    color: white;
-    border: none;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-}
-
-.btn-outline {
-    background-color: transparent;
-    color: #007bff;
-    border: 2px solid #007bff;
-}
-
-.btn-outline:hover {
-    background-color: #e7f2ff;
-}
-
-.btn-sm {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8rem;
-}
-
-/* Основное содержимое */
-.main {
-    min-height: 100vh;
+    color: #333;
 }
 
 /* Геро-секция */
 .hero {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 3rem 2rem;
+    padding: 4rem 2rem;
     text-align: center;
 }
 
 .hero-content {
-    max-width: 600px;
+    max-width: 650px;
     margin: 0 auto;
 }
 
 .hero-content h1 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.2rem;
 }
 
 .hero-content p {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     margin-bottom: 2rem;
+    opacity: 0.95;
 }
 
 .hero-buttons {
     display: flex;
     justify-content: center;
-    gap: 1rem;
+    gap: 1.2rem;
+    flex-wrap: wrap;
 }
 
 .hero-image {
-    margin-top: 2rem;
+    margin-top: 2.5rem;
 }
 
 .hero-image img {
     width: 100%;
-    max-width: 500px;
-    border-radius: 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    max-width: 550px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
-/* Блоки врачей и клиник */
+/* Блоки */
 .doctors-section, .clinics-section {
-    padding: 3rem 2rem;
-    background-color: #fff;
+    padding: 4rem 2rem;
+    background: white;
 }
 
 .container {
@@ -159,203 +175,195 @@ body {
 
 .doctors-section p, .clinics-section p {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
     color: #666;
 }
 
-/* Фильтр специализаций */
+/* Фильтр */
 .filter-container {
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
 }
 
 .filter-container label {
-    font-weight: 500;
+    font-weight: 600;
+    color: #333;
 }
 
 .filter-container select {
-    padding: 0.5rem;
+    padding: 0.6rem 1rem;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 1rem;
+    min-width: 200px;
 }
 
-/* Карусель */
+/* Карусели */
 .doctors-carousel, .clinics-carousel {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 1.5rem;
     overflow: hidden;
+    padding: 1rem 0;
 }
 
 .carousel-arrow {
-    background: #f0f0f0;
-    border: none;
+    background: white;
+    border: 2px solid #e0e0e0;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 1.5rem;
+    width: 44px;
+    height: 44px;
+    font-size: 1.4rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .carousel-arrow:hover {
-    background: #ddd;
-}
-
-.carousel-arrow.left {
-    order: -1;
-}
-
-.carousel-arrow.right {
-    order: 2;
+    background: #f0f0f0;
+    border-color: #007bff;
+    color: #007bff;
 }
 
 .doctors-wrapper, .clinics-wrapper {
     display: flex;
-    gap: 1rem;
-    overflow-x: scroll;
-    scroll-behavior: smooth;
-    padding: 1rem 0;
+    gap: 1.8rem;
+    overflow-x: auto;
+    padding: 0 1rem;
     scrollbar-width: thin;
-    scrollbar-color: #ccc #f0f0f0;
+    scrollbar-color: #ccc transparent;
 }
 
-.doctors-wrapper::-webkit-scrollbar {
+.doctors-wrapper::-webkit-scrollbar,
+.clinics-wrapper::-webkit-scrollbar {
     height: 8px;
 }
 
-.doctors-wrapper::-webkit-scrollbar-thumb {
+.doctors-wrapper::-webkit-scrollbar-thumb,
+.clinics-wrapper::-webkit-scrollbar-thumb {
     background: #ccc;
     border-radius: 4px;
 }
 
-.doctors-wrapper::-webkit-scrollbar-track {
-    background: #f0f0f0;
-}
-
-/* Карточки врачей */
-.doctor-card {
-    min-width: 250px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+/* Карточки — ОДИНАКОВЫЙ РАЗМЕР */
+.doctor-card, .clinic-card {
+    width: 280px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     overflow: hidden;
-    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
 }
 
-.doctor-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+.doctor-card:hover, .clinic-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
-.doctor-photo {
+/* Фото — ПОЛНОСТЬЮ ВИДНО */
+.doctor-photo, .clinic-photo {
     width: 100%;
-    height: 200px;
+    height: 220px;
     overflow: hidden;
 }
 
-.doctor-photo img {
+.doctor-photo img, .clinic-photo img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
+    display: block;
 }
 
-.doctor-info {
-    padding: 1rem;
+/* Информация */
+.doctor-info, .clinic-info {
+    padding: 1.2rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-.doctor-info h3 {
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
+.doctor-info h3, .clinic-info h3 {
+    margin-bottom: 0.6rem;
     color: #007bff;
 }
 
-.specialization {
-    font-size: 0.9rem;
-    color: #666;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-}
-
-.experience {
-    font-size: 0.8rem;
-    color: #888;
-    margin-bottom: 0.5rem;
+.specialization, .address, .phone, .experience, .bio {
+    margin-bottom: 0.6rem;
+    color: #555;
 }
 
 .bio {
-    font-size: 0.85rem;
-    color: #555;
-    margin-bottom: 1rem;
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.5;
 }
 
-/* Карточки клиник */
-.clinic-card {
-    min-width: 250px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    overflow: hidden;
-    transition: transform 0.2s;
-}
-
-.clinic-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-}
-
-.clinic-photo {
-    width: 100%;
-    height: 200px;
-    overflow: hidden;
-}
-
-.clinic-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.clinic-info {
-    padding: 1rem;
-}
-
-.clinic-info h3 {
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
-    color: #007bff;
-}
-
-.address {
-    font-size: 0.9rem;
-    color: #666;
-    margin-bottom: 0.5rem;
-}
-
-.phone {
-    font-size: 0.9rem;
-    color: #007bff;
-    margin-bottom: 1rem;
-}
-
-/* Подвал */
+/* Футер */
 .footer {
-    background-color: #333;
-    color: white;
-    text-align: center;
-    padding: 1.5rem;
-    margin-top: 2rem;
+    background: #1a1a1a;
+    color: #ddd;
+    padding: 3.5rem 2rem 2rem;
+    margin-top: 3rem;
 }
 
-.footer p {
+.footer .container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    text-align: left;
+}
+
+.footer h5 {
+    color: white;
+    margin-bottom: 1.2rem;
+    font-size: 1.2rem;
+}
+
+.footer p, .footer a {
+    color: #bbb;
+    text-decoration: none;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.footer a:hover {
+    color: #007bff;
+}
+
+.footer .btn {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.footer .btn-outline-light {
+    border: 1px solid #555;
+    color: #ccc;
+}
+
+.footer .btn-outline-light:hover {
+    background: #333;
+    color: white;
+    border-color: #007bff;
+}
+
+.footer-bottom {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #333;
+    text-align: center;
+    color: #888;
     font-size: 0.9rem;
 }
 
@@ -371,8 +379,8 @@ body {
         justify-content: center;
     }
 
-    .hero-content {
-        padding: 0 1rem;
+    .hero {
+        padding: 2.5rem 1.5rem;
     }
 
     .hero-content h1 {
@@ -384,18 +392,17 @@ body {
         align-items: stretch;
     }
 
-    .doctors-wrapper, .clinics-wrapper {
+    .filter-container {
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
+    }
+
+    .filter-container select {
+        min-width: auto;
     }
 
     .doctor-card, .clinic-card {
         width: 100%;
-        max-width: 300px;
-    }
-
-    .filter-container {
-        flex-direction: column;
-        align-items: stretch;
+        max-width: 320px;
     }
 }

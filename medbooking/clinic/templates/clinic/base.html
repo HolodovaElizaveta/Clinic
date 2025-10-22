@@ -21,16 +21,20 @@
                     <a href="#" class="nav-link">Контакты</a>
                 </nav>
 
-                <div class="auth-buttons">
-                    {% if user.is_authenticated %}
+                {% if user.is_authenticated %}
+                    <div class="auth-buttons">
                         <span class="welcome">Привет, {{ user.get_full_name|default:user.username }}!</span>
-                        <a href="/admin/" class="btn btn-primary">Админка</a>
-                        <a href="{% url 'logout' %}" class="btn btn-outline">Выйти</a>
-                    {% else %}
+                        <!-- Вместо ссылки -->
+<form method="post" action="{% url 'logout' %}" style="display: inline;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-outline">Выйти</button>
+</form>
+                    </div>
+                {% else %}
+                    <div class="auth-buttons">
                         <a href="{% url 'login' %}" class="btn btn-primary">Вход</a>
-                        <a href="{% url 'register' %}" class="btn btn-outline">Регистрация</a>
-                    {% endif %}
-                </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </header>
@@ -40,14 +44,77 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Подвал -->
+    <!-- Футер -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2025 MEDCLINIC. Все права защищены.</p>
+            <div class="row g-4">
+                <!-- Левый блок: QR-код и контакты -->
+                <div class="col-md-4">
+                    <div class="d-flex flex-column align-items-center">
+                        <h5 class="mb-3">Свяжитесь с нами</h5>
+                        <img src="https://via.placeholder.com/150?text=QR+Code" alt="QR Code" class="img-fluid mb-3"
+                            style="max-width: 150px;">
+                        <p class="text-center small">
+                            Сканируйте QR-код для быстрого доступа к нашему приложению.
+                        </p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="tel:+78005553535" class="btn btn-outline-light btn-sm">
+                                <i class="bi bi-telephone"></i> +7 (800) 555-35-35
+                            </a>
+                            <a href="mailto:info@medclinic.com" class="btn btn-outline-light btn-sm">
+                                <i class="bi bi-envelope"></i> info@medclinic.com
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Центральный блок: О компании -->
+                <div class="col-md-4">
+                    <h5 class="mb-3">О нас</h5>
+                    <p class="small">
+                        MEDCLINIC 
+                    </p>
+                    <div class="d-flex flex-column gap-2">
+                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-info-circle"></i> О компании</a>
+                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-newspaper"></i> Новости</a>
+                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-question-circle"></i> Частые вопросы</a>
+                    </div>
+                </div>
+
+                <!-- Правый блок: Социальные сети и подписка -->
+                <div class="col-md-4">
+                    <h5 class="mb-3">Присоединяйтесь к нам</h5>
+                    <div class="d-flex gap-3 mb-3 justify-content-center">
+                        <a href="#" class="btn btn-outline-light btn-sm"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="btn btn-outline-light btn-sm"><i class="bi bi-instagram"></i></a>
+                        <a href="#" class="btn btn-outline-light btn-sm"><i class="bi bi-twitter"></i></a>
+                        <a href="#" class="btn btn-outline-light btn-sm"><i class="bi bi-telegram"></i></a>
+                    </div>
+                    <p class="small text-center">
+                        Подпишитесь на нашу рассылку, чтобы быть в курсе последних новинок и акций.
+                    </p>
+                    <form class="d-flex gap-2">
+                        <input type="email" class="form-control form-control-sm" placeholder="Ваш email" required>
+                        <button type="submit" class="btn btn-primary btn-sm">Подписаться</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Нижняя строка с копирайтом -->
+            <div class="row mt-4">
+                <div class="col text-center">
+                    <p class="small mb-0">
+                        &copy; 2025 MEDCLINIC. Все права защищены.
+                    </p>
+                </div>
+            </div>
         </div>
     </footer>
 
-    <!-- jQuery и Bootstrap (если нужно) -->
+    <!-- Bootstrap Icons (для иконок в футере) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.css">
+
+    <!-- jQuery и кастомный JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{% static 'clinic/js/main.js' %}"></script>
 </body>

@@ -1,0 +1,31 @@
+<!-- clinic/templates/clinic/doctors/list.html -->
+{% extends 'clinic/base.html' %}
+
+{% block title %}Выбор врача{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2rem;">
+    <h2>Выберите врача</h2>
+    <div class="doctors-grid">
+        {% for doctor in doctors %}
+            <div class="doctor-card" style="min-width: 250px; margin: 1rem;">
+                <div class="doctor-photo">
+                    {% if doctor.photo_url %}
+                        <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}">
+                    {% else %}
+                        <img src="https://via.placeholder.com/150?text=Врач" alt="Фото врача">
+                    {% endif %}
+                </div>
+                <div class="doctor-info">
+                    <h3>{{ doctor.full_name }}</h3>
+                    <p class="specialization">{{ doctor.specialization }}</p>
+                    <p class="experience">Стаж: {{ doctor.experience_years }} лет</p>
+                    <a href="{% url 'appointments:book_doctor' doctor.id %}" class="btn btn-sm">Записаться</a>
+                </div>
+            </div>
+        {% empty %}
+            <p>Врач не найден.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -11,7 +11,11 @@
                 <h1>МЫ ЗАБОТИМСЯ О ВАШЕМ ЗДОРОВЬЕ ❤️</h1>
                 <p>Современный медицинский центр с квалифицированными специалистами и новейшим оборудованием.</p>
                 <div class="hero-buttons">
-                   
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'book' %}" class="btn btn-primary">Записаться на приём</a>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-primary">Записаться на приём</a>
+                    {% endif %}
                     <a href="#" class="btn btn-outline">Задать вопрос</a>
                 </div>
             </div>
@@ -48,7 +52,7 @@
                                 {% if doctor.photo_url %}
                                     <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}">
                                 {% else %}
-                                    <img src="https://via.placeholder.com/150?text=Врач" alt="Фото врача">
+                                    <img src="https://via.placeholder.com/300x300?text=Врач" alt="Фото врача">
                                 {% endif %}
                             </div>
                             <div class="doctor-info">
@@ -56,7 +60,11 @@
                                 <p class="specialization">{{ doctor.specialization }}</p>
                                 <p class="experience">Стаж: {{ doctor.experience_years }} лет</p>
                                 <p class="bio">{{ doctor.bio|truncatechars:80 }}</p>
-                               
+                                {% if user.is_authenticated %}
+                                    <a href="{% url 'book_doctor' doctor.id %}" class="btn btn-sm">Записаться</a>
+                                {% else %}
+                                    <a href="{% url 'login' %}" class="btn btn-sm">Записаться</a>
+                                {% endif %}
                             </div>
                         </div>
                     {% endfor %}
@@ -82,14 +90,14 @@
                                 {% if clinic.photo_url %}
                                     <img src="{{ clinic.photo_url }}" alt="{{ clinic.name }}">
                                 {% else %}
-                                    <img src="https://via.placeholder.com/200x150?text=Клиника" alt="Фото клиники">
+                                    <img src="https://via.placeholder.com/300x200?text=Клиника" alt="Фото клиники">
                                 {% endif %}
                             </div>
                             <div class="clinic-info">
                                 <h3>{{ clinic.name }}</h3>
                                 <p class="address">{{ clinic.address|truncatechars:50 }}</p>
                                 <p class="phone">{{ clinic.phone }}</p>
-                                
+                                <a href="{% url 'clinic_detail' clinic.id %}" class="btn btn-sm">Подробнее</a>
                             </div>
                         </div>
                     {% endfor %}

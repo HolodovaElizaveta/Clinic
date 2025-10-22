@@ -1,17 +1,15 @@
 # medbooking/urls.py
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth import views as auth_views  # ← добавьте это
+from django.contrib.auth import views as auth_views
 from clinic.views import index
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', index, name='main'),
-    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='main'), name='logout'),  # ← вот он
+    path('', include('clinic.urls')),   # все маршруты в clinic.urls
 ]
 
-# Только в режиме разработки
+# Статика и медиа (только в DEBUG)
 from django.conf import settings
 from django.conf.urls.static import static
 if settings.DEBUG:
