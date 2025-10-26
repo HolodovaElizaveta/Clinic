@@ -60,6 +60,9 @@
                                 <p class="specialization">{{ doctor.specialization }}</p>
                                 <p class="experience">Стаж: {{ doctor.experience_years }} лет</p>
                                 <p class="bio">{{ doctor.bio|truncatechars:80 }}</p>
+                                    <p class="price-tag">
+                                        <strong>{{ doctor.price }} ₽</strong> за приём
+                                    </p>
                                 {% if user.is_authenticated %}
                                     <a href="{% url 'book_doctor' doctor.id %}" class="btn btn-sm">Записаться</a>
                                 {% else %}

@@ -6,7 +6,8 @@ from clinic.views import index
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('clinic.urls')),   # все маршруты в clinic.urls
+    path('', include('clinic.urls')),
+          # все маршруты в clinic.urls
 ]
 
 # Статика и медиа (только в DEBUG)

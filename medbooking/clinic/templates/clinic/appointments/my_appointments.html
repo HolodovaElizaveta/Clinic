@@ -1,0 +1,95 @@
+{% extends 'clinic/base.html' %}
+{% load clinic_extras %}
+{% block title %}Мои записи{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4 text-center text-primary">Мои записи</h2>
+
+    {% if appointments %}
+        <div class="row g-4">
+            {% for appt in appointments %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card appointment-card shadow-sm border-0 h-100">
+                        <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">{{ appt.schedule.doctor.full_name }}</h5>
+                            <span class="badge rounded-pill {% if appt.status == 'cancelled' %}bg-danger{% elif appt.status == 'completed' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                {{ appt.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-3">
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="bi bi-calendar me-2 text-primary"></i>
+                                    <span><strong>Дата:</strong> {{ appt.schedule.date }}</span>
+                                </li>
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="bi bi-clock me-2 text-primary"></i>
+                                    <span><strong>Время:</strong> {{ appt.schedule.time }}</span>
+                                </li>
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="bi bi-hospital me-2 text-primary"></i>
+                                    <span><strong>Клиника:</strong> {{ appt.schedule.clinic.name }}</span>
+                                </li>
+                                <li class="d-flex align-items-start">
+                                    <i class="bi bi-geo-alt me-2 text-primary"></i>
+                                    <span><strong>Адрес:</strong> {{ appt.schedule.clinic.address|truncatechars:70 }}</span>
+                                </li>
+                            </ul>
+
+                            {% if appt.status == 'planned' %}
+                                <a href="{% url 'cancel_appointment' appt.id %}" 
+                                   class="btn btn-outline-danger btn-sm w-100 mt-2"
+                                   onclick="return confirm('Вы уверены, что хотите отменить запись?')">
+                                    <i class="bi bi-x-circle me-1"></i> Отменить запись
+                                </a>
+                            {% endif %}
+                        </div>
+
+                        {% if appt.medical_files.exists %}
+                        <div class="card-footer bg-light">
+                            <strong class="text-muted">Заключения:</strong>
+                            <div class="mt-2 d-flex flex-wrap gap-2">
+                                {% for file in appt.medical_files.all %}
+                                    {% if file|can_view:request.user %}
+                                        <a href="{% url 'download_medical_file' file.id %}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                                        </a>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Нет доступа</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center shadow-sm mt-4 rounded-3">
+            <i class="bi bi-calendar-x me-2"></i>У вас пока нет записей.
+        </div>
+    {% endif %}
+
+    <div class="text-center mt-4">
+        <a href="{% url 'main' %}" class="btn btn-outline-primary px-4 py-2">
+            <i class="bi bi-arrow-left me-1"></i> Вернуться на главную
+        </a>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff, #0062cc);
+}
+.appointment-card {
+    border-radius: 16px;
+    transition: all 0.3s ease;
+}
+.appointment-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(0,123,255,0.2);
+}
+</style>
+{% endblock %}

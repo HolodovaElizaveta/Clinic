@@ -5,10 +5,13 @@ from .models import (
     User, Clinic, Patient, Doctor,
     Schedule, Appointment, VisitHistory, MedicalFile
 )
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from .models import User
 
-# ========== User ==========
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(BaseUserAdmin):
+    # Переопределяем, чтобы использовать стандартный интерфейс с кнопкой "Изменить пароль"
     list_display = ('username', 'email', 'role', 'created_at', 'is_staff')
     list_filter = ('role', 'is_staff', 'is_active', 'created_at')
     search_fields = ('username', 'email', 'first_name', 'last_name')
@@ -20,6 +23,12 @@ class UserAdmin(admin.ModelAdmin):
         ('Важные даты', {'fields': ('last_login', 'created_at')}),
     )
     readonly_fields = ('created_at',)
+
+    # Это важно — добавляет кнопку "Изменить пароль"
+    def get_fieldsets(self, request, obj=None):
+        if not obj:
+            return super().get_fieldsets(request, obj)
+        return super().get_fieldsets(request, obj)
 
 # ========== Clinic ==========
 @admin.register(Clinic)

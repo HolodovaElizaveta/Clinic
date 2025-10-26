@@ -1,0 +1,78 @@
+<!-- clinic/templates/clinic/appointments/create_appointment.html -->
+{% extends 'clinic/base.html' %}
+{% load static %}
+{% block title %}Запись к {{ doctor.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">Запись к {{ doctor.full_name }}</h3>
+        </div>
+        <div class="card-body">
+            <form method="get" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Клиника</label>
+                        <select name="clinic" class="form-select" onchange="this.form.submit()" required>
+                            <option value="">Выберите клинику</option>
+                            {% for clinic in clinics %}
+                                <option value="{{ clinic.id }}" {% if selected_clinic == clinic.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ clinic.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Дата</label>
+                        <input type="date" name="date" class="form-control" 
+                               min="{{ 'now'|date:'Y-m-d' }}" 
+                               onchange="this.form.submit()"
+                               {% if selected_clinic %}required{% endif %}>
+                    </div>
+                </div>
+            </form>
+
+            {% if selected_clinic and selected_date and times %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="clinic_id" value="{{ selected_clinic }}">
+                    <input type="hidden" name="date" value="{{ selected_date }}">
+                    <div class="mb-3">
+                        <label class="form-label">Время</label>
+                        <div class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));">
+                            {% for slot in times %}
+                                <button type="submit" name="time" value="{{ slot.time }}" class="btn btn-outline-primary">
+                                    {{ slot.time }}
+                                </button>
+                            {% empty %}
+                                <div class="alert alert-warning">Нет свободных слотов на эту дату.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            {% elif selected_clinic and selected_date %}
+                <div class="alert alert-info">Нет доступных временных слотов.</div>
+            {% endif %}
+        </div>
+        <div class="card-footer text-end">
+            <a href="{% url 'main' %}" class="btn btn-secondary">Отмена</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+.btn-outline-primary {
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+.btn-outline-primary:hover {
+    background: #007bff;
+    color: white;
+}
+</style>
+{% endblock %}

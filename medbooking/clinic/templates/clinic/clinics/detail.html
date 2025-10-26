@@ -1,0 +1,87 @@
+<!-- clinic/templates/clinic/clinics/detail.html -->
+{% extends 'clinic/base.html' %}
+
+{% block title %}Клиника — {{ clinic.name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 1rem; max-width: 1200px;">
+    <!-- Информация о клинике -->
+    <div class="clinic-header">
+        <h1>{{ clinic.name }}</h1>
+        {% if clinic.photo_url %}
+            <img src="{{ clinic.photo_url }}" alt="{{ clinic.name }}" class="clinic-detail-photo">
+        {% endif %}
+        <div class="clinic-details">
+            <p><strong>Адрес:</strong> {{ clinic.address }}</p>
+            <p><strong>Телефон:</strong> {{ clinic.phone }}</p>
+            {% if clinic.description %}
+                <div class="clinic-description">
+                    <strong>О клинике:</strong>
+                    <p>{{ clinic.description }}</p>
+                </div>
+            {% endif %}
+        </div>
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <a href="{% url 'main' %}" class="btn btn-outline">← Вернуться на главную</a>
+        </div>
+    </div>
+
+    <!-- Врачи в этой клинике -->
+    {% if doctors %}
+    <section class="doctors-in-clinic" style="margin-top: 3rem;">
+        <h2>Наши врачи в клинике "{{ clinic.name }}"</h2>
+        <p>Квалифицированные специалисты, принимающие в этом медицинском центре.</p>
+
+        <!-- Карусель врачей -->
+        <div class="doctors-carousel" style="position: relative; margin-top: 1.5rem;">
+            <button class="carousel-arrow left" onclick="scrollDoctors(-1)">&#10094;</button>
+            <div class="doctors-wrapper" id="doctors-wrapper-clinic">
+                {% for doctor in doctors %}
+                    <div class="doctor-card" data-specialization="{{ doctor.specialization }}">
+                        <div class="doctor-photo">
+                            {% if doctor.photo_url %}
+                                <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}">
+                            {% else %}
+                                <img src="https://via.placeholder.com/300x300?text=Врач" alt="Фото врача">
+                            {% endif %}
+                        </div>
+                        <div class="doctor-info">
+                            <h3>{{ doctor.full_name }}</h3>
+                            <p class="specialization">{{ doctor.specialization }}</p>
+                            <p class="experience">Стаж: {{ doctor.experience_years }} лет</p>
+                            <p class="price-tag">
+                                <strong>{{ doctor.price }} ₽</strong> за приём
+                            </p>
+                            {% if user.is_authenticated %}
+                                <a href="{% url 'book_doctor' doctor.id %}" class="btn btn-sm">Записаться</a>
+                            {% else %}
+                                <a href="{% url 'login' %}" class="btn btn-sm">Записаться</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <button class="carousel-arrow right" onclick="scrollDoctors(1)">&#10095;</button>
+        </div>
+    </section>
+    {% else %}
+        <div class="no-doctors" style="text-align: center; margin-top: 2rem; color: #777;">
+            <p>В этой клинике пока нет врачей.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    // Отдельная прокрутка для карусели на странице клиники
+    function scrollDoctors(direction) {
+        const wrapper = document.getElementById('doctors-wrapper-clinic');
+        if (wrapper) {
+            const scrollAmount = 300;
+            wrapper.scrollBy({
+                left: direction * scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    }
+</script>
+{% endblock %}

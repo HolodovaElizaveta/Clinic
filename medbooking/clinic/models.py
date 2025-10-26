@@ -21,6 +21,7 @@ class Gender(models.TextChoices):
 class User(AbstractUser):
     role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.PATIENT)
     created_at = models.DateTimeField(auto_now_add=True)
+   
 
 class Clinic(models.Model):
     name = models.CharField(max_length=255)
@@ -54,6 +55,7 @@ class Doctor(models.Model):
     experience_years = models.PositiveSmallIntegerField()
     bio = models.TextField(blank=True, null=True)
     clinics = models.ManyToManyField(Clinic, related_name='doctors')
+    price = models.SmallIntegerField(verbose_name="Цена")
     photo_url = models.URLField(
         max_length=500,
         blank=True,
@@ -105,6 +107,16 @@ class MedicalFile(models.Model):
     upload_time = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='medical_files')
     appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='medical_files')
+    def can_view_by(self, user):
+        """Проверяет, может ли пользователь просматривать этот файл"""
+        if user.is_authenticated:
+            if user.role == 'patient' and self.owner == user.patient_profile:
+                return True
+            if user.role == 'doctor' and self.appointment.schedule.doctor.user == user:
+                return True
+            if user.is_staff:  # админ всегда может
+                return True
+        return False
 
     def __str__(self):
         return f"Заключение — {self.owner.full_name} ({self.upload_time.date()})"

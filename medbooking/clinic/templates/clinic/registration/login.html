@@ -1,11 +1,16 @@
-<!-- clinic/templates/clinic/registration/login.html -->
 {% extends 'clinic/base.html' %}
 
-{% block title %}Вход в систему{% endblock %}
+{% block title %}Вход / Регистрация{% endblock %}
 
 {% block content %}
 <div class="auth-container">
-    <div class="auth-card">
+    <div class="auth-tabs">
+        <button class="tab-btn {% if not show_register %}active{% endif %}" onclick="showTab('login')">Вход</button>
+        <button class="tab-btn {% if show_register %}active{% endif %}" onclick="showTab('register')">Регистрация</button>
+    </div>
+
+    <!-- Форма входа -->
+    <div id="login-form" class="auth-card" style="{% if show_register %}display:none;{% endif %}">
         <div class="auth-logo">MEDCLINIC</div>
         <h2>Вход в личный кабинет</h2>
         {% if messages %}
@@ -15,15 +20,74 @@
         {% endif %}
         <form method="post">
             {% csrf_token %}
+            <input type="hidden" name="login" value="1">
             <div class="form-group">
-                <label for="id_email">Email</label>
-                <input type="email" name="email" id="id_email" class="form-control" required>
+                <label for="login_email">Email</label>
+                <input type="email" name="email" id="login_email" class="form-control" required>
             </div>
             <div class="form-group">
-                <label for="id_password">Пароль</label>
-                <input type="password" name="password" id="id_password" class="form-control" required>
+                <label for="login_password">Пароль</label>
+                <input type="password" name="password" id="login_password" class="form-control" required>
             </div>
-            <button type="submit" class="btn btn-primary w-100">Войти </button>
+            <button type="submit" class="btn btn-primary w-100">Войти</button>
+        </form>
+        <div class="auth-footer">
+            <a href="{% url 'main' %}" class="btn btn-outline w-100">← Назад на главную</a>
+        </div>
+    </div>
+
+    <!-- Форма регистрации -->
+    <div id="register-form" class="auth-card" style="{% if not show_register %}display:none;{% endif %}">
+        <div class="auth-logo">MEDCLINIC</div>
+        <h2>Регистрация пациента</h2>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-danger">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        <form method="post" id="registration-form">
+            {% csrf_token %}
+            <input type="hidden" name="register" value="1">
+
+            <div class="form-group">
+                <label for="reg_full_name">ФИО <span class="required">*</span></label>
+                <input type="text" name="full_name" id="reg_full_name" class="form-control" value="{{ reg_full_name|default:'' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="reg_email">Email <span class="required">*</span></label>
+                <input type="email" name="email" id="reg_email" class="form-control" value="{{ reg_email|default:'' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="reg_phone">Телефон <span class="required">*</span></label>
+                <input type="tel" name="phone" id="reg_phone" class="form-control" value="{{ reg_phone|default:'' }}" required placeholder="+7 (___) ___-__-__">
+            </div>
+
+            <div class="form-group">
+                <label for="reg_birth_date">Дата рождения <span class="required">*</span></label>
+                <input type="date" name="birth_date" id="reg_birth_date" class="form-control" value="{{ reg_birth_date|default:'' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>Пол <span class="required">*</span></label>
+                <div class="radio-group">
+                    <label><input type="radio" name="gender" value="male" {% if reg_gender == 'male' %}checked{% endif %}> Мужской</label>
+                    <label><input type="radio" name="gender" value="female" {% if reg_gender == 'female' %}checked{% endif %}> Женский</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reg_password1">Пароль <span class="required">*</span></label>
+                <input type="password" name="password1" id="reg_password1" class="form-control" minlength="8" required>
+            </div>
+
+            <div class="form-group">
+                <label for="reg_password2">Повторите пароль <span class="required">*</span></label>
+                <input type="password" name="password2" id="reg_password2" class="form-control" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
         </form>
         <div class="auth-footer">
             <a href="{% url 'main' %}" class="btn btn-outline w-100">← Назад на главную</a>
@@ -34,10 +98,31 @@
 <style>
 .auth-container {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
     min-height: 80vh;
     padding: 1rem;
+}
+
+.auth-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.tab-btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    background: #e9ecef;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: white;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .auth-card {
@@ -74,6 +159,10 @@
     color: #444;
 }
 
+.required {
+    color: #e74c3c;
+}
+
 .form-control {
     width: 100%;
     padding: 0.75rem;
@@ -87,6 +176,16 @@
     outline: none;
     border-color: #007bff;
     box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+}
+
+.radio-group {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.radio-group label {
+    font-weight: normal;
+    cursor: pointer;
 }
 
 .btn.w-100 {
@@ -109,4 +208,16 @@
     margin-bottom: 1.2rem;
 }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/inputmask@5.0.8/dist/inputmask.min.js"></script>
+<script>
+    // Маска для телефона
+    Inputmask("+7 (999) 999-99-99").mask(document.getElementById("reg_phone"));
+
+    // Переключение вкладок
+    function showTab(tab) {
+        document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+        document.getElementById('register-form').style.display = tab === 'register' ? 'block' : 'none';
+    }
+</script>
 {% endblock %}

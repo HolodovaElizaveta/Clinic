@@ -6,38 +6,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Медицинский центр{% endblock %}</title>
     {% load static %}
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.css">
+    <!-- Ваши стили -->
     <link rel="stylesheet" href="{% static 'clinic/css/style.css' %}">
 </head>
 <body>
-    <!-- Шапка сайта -->
-    <header class="header">
-        <div class="container">
-            <div class="header-content">
-                <a href="/" class="logo">MEDCLINIC</a>
-                <nav class="nav">
-                    <a href="#doctors" class="nav-link">Наши врачи</a>
-                    <a href="#clinics" class="nav-link">Клиники</a>
-                    <a href="#" class="nav-link">Услуги</a>
-                    <a href="#" class="nav-link">Контакты</a>
-                </nav>
+  <!-- Шапка сайта -->
+<header class="header bg-white shadow-sm">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center py-3">
+            <!-- Логотип -->
+            <a href="/" class="logo text-decoration-none d-flex align-items-center">
+                <i class="bi bi-heart-pulse me-2 text-primary" style="font-size: 1.5rem;"></i>
+                <span class="fw-bold fs-4 text-primary">MEDCLINIC</span>
+            </a>
 
+            <!-- Навигация -->
+            <nav class="nav d-none d-md-flex">
+                <a href="#doctors" class="nav-link px-3"><i class="bi bi-person-plus me-1"></i>Наши врачи</a>
+                <a href="#clinics" class="nav-link px-3"><i class="bi bi-hospital me-1"></i>Клиники</a>
+                <a href="#" class="nav-link px-3"><i class="bi bi-file-medical me-1"></i>Услуги</a>
+                <a href="#" class="nav-link px-3"><i class="bi bi-telephone me-1"></i>Контакты</a>
+            </nav>
+
+            <!-- Кнопки авторизации -->
+            <div class="auth-buttons d-flex align-items-center gap-3">
                 {% if user.is_authenticated %}
-                    <div class="auth-buttons">
-                        <span class="welcome">Привет, {{ user.get_full_name|default:user.username }}!</span>
-                        <!-- Вместо ссылки -->
-<form method="post" action="{% url 'logout' %}" style="display: inline;">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-outline">Выйти</button>
-</form>
-                    </div>
+                    <!-- <span class="welcome text-muted d-none d-md-inline">
+                        {% if user.role == 'patient' and user.patient_profile %}
+                            Привет, {{ user.patient_profile.full_name }}!
+                        {% elif user.role == 'doctor' and user.doctor_profile %}
+                            Привет, доктор {{ user.doctor_profile.full_name }}!
+                        {% else %}
+                            Привет, {{ user.username }}!
+                        {% endif %}
+                    </span> -->
+
+                    {% if user.role == 'patient' and user.patient_profile %}
+                        <a href="{% url 'my_appointments' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-calendar-check me-1"></i> Мои записи
+                        </a>
+                    {% elif user.role == 'doctor' and user.doctor_profile %}
+                        <a href="{% url 'doctor_appointments' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-calendar-event me-1"></i> Мои приёмы
+                        </a>
+                    {% elif user.role == 'admin' %}
+                        <a href="{% url 'admin:index' %}" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-shield-lock me-1"></i> Админка
+                        </a>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-box-arrow-right me-1"></i> Выйти
+                        </button>
+                    </form>
                 {% else %}
-                    <div class="auth-buttons">
-                        <a href="{% url 'login' %}" class="btn btn-primary">Вход</a>
-                    </div>
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Вход / Регистрация
+                    </a>
                 {% endif %}
             </div>
         </div>
-    </header>
+    </div>
+</header>
 
     <!-- Основное содержимое -->
     <main class="main">
@@ -45,16 +81,16 @@
     </main>
 
     <!-- Футер -->
-    <footer class="footer">
+    <footer class="footer bg-dark text-light pt-4 pb-3 mt-5">
         <div class="container">
             <div class="row g-4">
                 <!-- Левый блок: QR-код и контакты -->
                 <div class="col-md-4">
-                    <div class="d-flex flex-column align-items-center">
-                        <h5 class="mb-3">Свяжитесь с нами</h5>
-                        <img src="https://via.placeholder.com/150?text=QR+Code" alt="QR Code" class="img-fluid mb-3"
-                            style="max-width: 150px;">
-                        <p class="text-center small">
+                    <div class="text-center">
+                        <h5><i class="bi bi-qr-code me-2"></i>Свяжитесь с нами</h5>
+                        <img src="https://via.placeholder.com/150?text=QR+Code" alt="QR Code" class="img-fluid mb-3 rounded"
+                             style="max-width: 150px; border: 2px solid #fff;">
+                        <p class="small text-center">
                             Сканируйте QR-код для быстрого доступа к нашему приложению.
                         </p>
                         <div class="d-flex gap-2 justify-content-center">
@@ -67,23 +103,21 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- Центральный блок: О компании -->
                 <div class="col-md-4">
-                    <h5 class="mb-3">О нас</h5>
+                    <h5><i class="bi bi-info-circle me-2"></i>О нас</h5>
                     <p class="small">
-                        MEDCLINIC 
+                        MEDCLINIC — ваш надежный партнер в заботе о здоровье.
                     </p>
                     <div class="d-flex flex-column gap-2">
-                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-info-circle"></i> О компании</a>
-                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-newspaper"></i> Новости</a>
-                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-question-circle"></i> Частые вопросы</a>
+                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-info-circle me-1"></i> О компании</a>
+                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-newspaper me-1"></i> Новости</a>
+                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-question-circle me-1"></i> Частые вопросы</a>
                     </div>
                 </div>
-
                 <!-- Правый блок: Социальные сети и подписка -->
                 <div class="col-md-4">
-                    <h5 class="mb-3">Присоединяйтесь к нам</h5>
+                    <h5><i class="bi bi-people me-2"></i>Присоединяйтесь к нам</h5>
                     <div class="d-flex gap-3 mb-3 justify-content-center">
                         <a href="#" class="btn btn-outline-light btn-sm"><i class="bi bi-facebook"></i></a>
                         <a href="#" class="btn btn-outline-light btn-sm"><i class="bi bi-instagram"></i></a>
@@ -99,7 +133,6 @@
                     </form>
                 </div>
             </div>
-
             <!-- Нижняя строка с копирайтом -->
             <div class="row mt-4">
                 <div class="col text-center">
@@ -111,9 +144,8 @@
         </div>
     </footer>
 
-    <!-- Bootstrap Icons (для иконок в футере) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.css">
-
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- jQuery и кастомный JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{% static 'clinic/js/main.js' %}"></script>
