@@ -18,6 +18,13 @@
                             </span>
                         </div>
                         <div class="card-body">
+                            <!-- НАПОМИНАНИЕ ЗАВТРА -->
+                            {% if appt.schedule.date == tomorrow %}
+                                <div class="alert alert-info alert-sm mb-3">
+                                    <i class="bi bi-bell"></i> Завтра ваш приём!
+                                </div>
+                            {% endif %}
+
                             <ul class="list-unstyled mb-3">
                                 <li class="d-flex align-items-start mb-2">
                                     <i class="bi bi-calendar me-2 text-primary"></i>

@@ -1,0 +1,52 @@
+{% extends 'clinic/base.html' %}
+{% block title %}Добавить слот{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h4 class="mb-0">Добавить новый слот</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.clinic.label }}</label>
+                            {{ form.clinic }}
+                            {% if form.clinic.errors %}
+                                <div class="text-danger">{{ form.clinic.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.date.label }}</label>
+                            {{ form.date }}
+                            {% if form.date.errors %}
+                                <div class="text-danger">{{ form.date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.time.label }}</label>
+                            {{ form.time }}
+                            {% if form.time.errors %}
+                                <div class="text-danger">{{ form.time.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Добавить слот</button>
+                            <a href="{% url 'doctor_appointments' %}" class="btn btn-outline-secondary">Отмена</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff, #0062cc);
+}
+</style>
+{% endblock %}

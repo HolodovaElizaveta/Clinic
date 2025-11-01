@@ -84,6 +84,7 @@ class Appointment(models.Model):
     schedule = models.OneToOneField(Schedule, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=AppointmentStatus.choices, default=AppointmentStatus.PLANNED)
     notes = models.TextField(blank=True, null=True)
+    reminder_sent = models.BooleanField(default=False)
 
     @property
     def datetime(self):

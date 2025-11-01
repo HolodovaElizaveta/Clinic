@@ -14,11 +14,37 @@ def index(request):
     clinics = Clinic.objects.all()
     patient = Patient.objects.all()
     specializations = Doctor.objects.values_list('specialization', flat=True).distinct().order_by('specialization')
+    upcoming_appointments_doctor = None
+    if request.user.is_authenticated and request.user.role == 'doctor':
+        doctor_profile = request.user.doctor_profile
+        now = datetime.now()
+        tomorrow = now + timedelta(days=1)
+        upcoming_appointments_doctor = Appointment.objects.filter(
+            schedule__doctor=doctor_profile,
+            status=AppointmentStatus.PLANNED,
+            schedule__date__gte=now.date(),
+            schedule__date__lte=tomorrow.date()
+        ).select_related('patient', 'schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
+
+         # Если пользователь — пациент, добавляем уведомления
+    upcoming_appointments = None
+    if request.user.is_authenticated and request.user.role == 'patient':
+        patient_profile = request.user.patient_profile
+        now = datetime.now()
+        tomorrow = now + timedelta(days=1)
+        upcoming_appointments = patient_profile.appointments.filter(
+            status=AppointmentStatus.PLANNED,
+            schedule__date__gte=now.date(),
+            schedule__date__lte=tomorrow.date()
+        ).select_related('schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
+
     return render(request, 'clinic/index.html', {
         'doctors': doctors,
         'clinics': clinics,
         'specializations': specializations,
         'patient' : patient,
+        'upcoming_appointments_doctor': upcoming_appointments_doctor,
+        'upcoming_appointments': upcoming_appointments,
     })
 
 
@@ -145,6 +171,8 @@ from .models import Appointment, Schedule, VisitHistory, MedicalFile
 from django.utils import timezone
 from datetime import datetime
 
+from datetime import date, timedelta
+
 @login_required
 def my_appointments(request):
     """Страница 'Мои записи' для пациента"""
@@ -152,7 +180,20 @@ def my_appointments(request):
         return redirect('main')
     patient = request.user.patient_profile
     appointments = patient.appointments.select_related('schedule__doctor', 'schedule__clinic').order_by('-schedule__date')
-    return render(request, 'clinic/appointments/my_appointments.html', {'appointments': appointments})
+     # Уведомления: записи на сегодня и завтра
+    now = datetime.now()
+    tomorrow = now + timedelta(days=1)
+    upcoming_appointments = patient.appointments.filter(
+        status=AppointmentStatus.PLANNED,
+        schedule__date__gte=now.date(),
+        schedule__date__lte=tomorrow.date()
+    ).select_related('schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
+
+    return render(request, 'clinic/appointments/my_appointments.html', {
+        'appointments': appointments,
+        'tomorrow': date.today() + timedelta(days=1),
+        'upcoming_appointments': upcoming_appointments,
+    })
 
 @login_required
 def doctor_appointments(request):
@@ -165,8 +206,22 @@ def doctor_appointments(request):
     ).select_related(
         'patient', 'schedule__clinic'
     ).order_by('schedule__date', 'schedule__time')
-    return render(request, 'clinic/appointments/doctor_appointments.html', {'appointments': appointments})
 
+    # Уведомления для врача: записи на сегодня и завтра
+    now = datetime.now()
+    tomorrow = now + timedelta(days=1)
+    upcoming_appointments_doctor = Appointment.objects.filter(
+        schedule__doctor=doctor,
+        status=AppointmentStatus.PLANNED,
+        schedule__date__gte=now.date(),
+        schedule__date__lte=tomorrow.date()
+    ).select_related('patient', 'schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
+
+    return render(request, 'clinic/appointments/doctor_appointments.html', {
+        'appointments': appointments,
+        'doctor': doctor,
+        'upcoming_appointments_doctor': upcoming_appointments_doctor,
+    })
 @login_required
 def create_appointment(request, doctor_id):
     doctor = get_object_or_404(Doctor, id=doctor_id)
@@ -432,3 +487,131 @@ def admin_update_appointment_status(request, appointment_id):
         else:
             messages.error(request, "Недопустимый статус.")
     return redirect('admin_appointments')
+
+# clinic/views.py
+
+from django import forms
+from datetime import date
+
+class AddScheduleForm(forms.Form):
+    clinic = forms.ModelChoiceField(
+        queryset=Clinic.objects.none(),
+        label="Клиника",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    date = forms.DateField(
+        label="Дата",
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        initial=date.today
+    )
+    time = forms.TimeField(
+        label="Время",
+        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    )
+
+    def __init__(self, doctor, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['clinic'].queryset = doctor.clinics.all()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        clinic = cleaned_data.get('clinic')
+        date_val = cleaned_data.get('date')
+        time_val = cleaned_data.get('time')
+
+        if clinic and date_val and time_val:
+            # Проверка на уникальность (doctor, date, time, clinic)
+            if Schedule.objects.filter(
+                doctor=self.initial.get('doctor'),
+                clinic=clinic,
+                date=date_val,
+                time=time_val
+            ).exists():
+                raise forms.ValidationError("Такой слот уже существует.")
+        return cleaned_data
+
+
+@login_required
+def add_doctor_schedule(request):
+    """Врач добавляет новый слот в своё расписание"""
+    if request.user.role != 'doctor':
+        return redirect('main')
+    
+    doctor = request.user.doctor_profile
+
+    if request.method == 'POST':
+        form = AddScheduleForm(doctor, request.POST)
+        form.initial['doctor'] = doctor  # для валидации
+        if form.is_valid():
+            Schedule.objects.create(
+                doctor=doctor,
+                clinic=form.cleaned_data['clinic'],
+                date=form.cleaned_data['date'],
+                time=form.cleaned_data['time']
+            )
+            messages.success(request, "Новый слот добавлен в расписание!")
+            return redirect('doctor_appointments')
+        else:
+            messages.error(request, "Исправьте ошибки в форме.")
+    else:
+        form = AddScheduleForm(doctor)
+        form.initial['doctor'] = doctor
+
+    return render(request, 'clinic/appointments/add_schedule.html', {'form': form})
+
+# clinic/views.py
+
+from django.core.mail import send_mail
+from django.utils import timezone
+from datetime import timedelta
+
+def send_appointment_reminders():
+    """
+    Отправляет email-напоминания пациентам за 24 часа до приёма.
+    Вызывать раз в час через cron или Celery.
+    """
+    now = timezone.now()
+    # Ищем записи, где приём через 24±0.5 часа (чтобы не пропустить при запуске раз в час)
+    upcoming_time = now + timedelta(hours=24)
+    time_window_start = upcoming_time - timedelta(minutes=30)
+    time_window_end = upcoming_time + timedelta(minutes=30)
+
+    appointments = Appointment.objects.filter(
+        status=AppointmentStatus.PLANNED,
+        reminder_sent=False,
+        schedule__date=time_window_start.date()
+    ).select_related('patient', 'schedule__doctor', 'schedule__clinic')
+
+    for appt in appointments:
+        # Проверяем точное время (на случай, если дата совпадает, а время — нет)
+        appointment_datetime = timezone.make_aware(
+            datetime.combine(appt.schedule.date, appt.schedule.time)
+        )
+        if time_window_start <= appointment_datetime <= time_window_end:
+            try:
+                send_mail(
+                    subject="Напоминание о приёме в MEDCLINIC",
+                    message=f"""
+Здравствуйте, {appt.patient.full_name}!
+
+Напоминаем, что у вас записан приём:
+- Врач: {appt.schedule.doctor.full_name}
+- Дата: {appt.schedule.date}
+- Время: {appt.schedule.time}
+- Клиника: {appt.schedule.clinic.name}
+- Адрес: {appt.schedule.clinic.address}
+
+Пожалуйста, не опаздывайте!
+
+С уважением,
+Команда MEDCLINIC
+                    """.strip(),
+                    from_email="info@medclinic.com",
+                    recipient_list=[appt.patient.user.email],
+                    fail_silently=False,
+                )
+                appt.reminder_sent = True
+                appt.save(update_fields=['reminder_sent'])
+                print(f"Напоминание отправлено: {appt.patient.user.email}")
+            except Exception as e:
+                print(f"Ошибка отправки напоминания для {appt.id}: {e}")

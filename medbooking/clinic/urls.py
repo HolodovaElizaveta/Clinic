@@ -28,6 +28,8 @@ urlpatterns = [
      # Админка клиники
     path('admin-appointments/', views.admin_appointments, name='admin_appointments'),
     path('admin/appointment/<int:appointment_id>/update-status/', views.admin_update_appointment_status, name='admin_update_appointment_status'),
+
+    path('doctor/schedule/add/', views.add_doctor_schedule, name='add_doctor_schedule'),
 ]
 from django.conf import settings
 from django.conf.urls.static import static
