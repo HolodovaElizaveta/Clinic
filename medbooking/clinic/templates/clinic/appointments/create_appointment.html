@@ -5,54 +5,66 @@
 
 {% block content %}
 <div class="container py-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-gradient-primary text-white">
             <h3 class="mb-0">Запись к {{ doctor.full_name }}</h3>
         </div>
         <div class="card-body">
-            <form method="get" class="mb-4">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Клиника</label>
-                        <select name="clinic" class="form-select" onchange="this.form.submit()" required>
-                            <option value="">Выберите клинику</option>
-                            {% for clinic in clinics %}
-                                <option value="{{ clinic.id }}" {% if selected_clinic == clinic.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ clinic.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
+            <!-- Шаг 1: Выбор клиники -->
+            <div class="mb-4">
+                <h5 class="mb-3">1. Выберите клинику</h5>
+                {% if clinics %}
+                    <div class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                        {% for clinic in clinics %}
+                            <a href="?clinic={{ clinic.id }}{% if selected_date %}&date={{ selected_date }}{% endif %}"
+                               class="btn btn-outline-primary text-start {% if selected_clinic == clinic.id|stringformat:"s" %}active{% endif %}">
+                                <strong>{{ clinic.name }}</strong><br>
+                                <small class="text-muted">{{ clinic.address|truncatechars:40 }}</small>
+                            </a>
+                        {% endfor %}
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Дата</label>
-                        <input type="date" name="date" class="form-control" 
-                               min="{{ 'now'|date:'Y-m-d' }}" 
-                               onchange="this.form.submit()"
-                               {% if selected_clinic %}required{% endif %}>
-                    </div>
-                </div>
-            </form>
+                {% else %}
+                    <div class="alert alert-warning">У врача нет доступных клиник.</div>
+                {% endif %}
+            </div>
 
+            <!-- Шаг 2: Выбор даты -->
+            {% if selected_clinic and available_dates %}
+            <div class="mb-4">
+                <h5 class="mb-3">2. Выберите дату</h5>
+                <div class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));">
+                    {% for date in available_dates %}
+                        {% with date_str=date|date:'Y-m-d' %}
+                            <a href="?clinic={{ selected_clinic }}&date={{ date_str }}"
+                               class="btn btn-outline-secondary {% if selected_date == date_str %}active{% endif %}">
+                                {{ date|date:'d.m' }}<br>
+                                <small>{{ date|date:'D'|slice:':2'|upper }}</small>
+                            </a>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Шаг 3: Выбор времени -->
             {% if selected_clinic and selected_date and times %}
                 <form method="post">
                     {% csrf_token %}
                     <input type="hidden" name="clinic_id" value="{{ selected_clinic }}">
                     <input type="hidden" name="date" value="{{ selected_date }}">
-                    <div class="mb-3">
-                        <label class="form-label">Время</label>
-                        <div class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));">
-                            {% for slot in times %}
-                                <button type="submit" name="time" value="{{ slot.time }}" class="btn btn-outline-primary">
-                                    {{ slot.time }}
-                                </button>
-                            {% empty %}
-                                <div class="alert alert-warning">Нет свободных слотов на эту дату.</div>
-                            {% endfor %}
-                        </div>
+                    <h5 class="mb-3">3. Выберите время</h5>
+                    <div class="d-grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));">
+                        {% for slot in times %}
+                            <button type="submit" name="time" value="{{ slot.time }}" class="btn btn-outline-success">
+                                {{ slot.time }}
+                            </button>
+                        {% empty %}
+                            <div class="alert alert-warning col-12">Нет свободных слотов на эту дату.</div>
+                        {% endfor %}
                     </div>
                 </form>
             {% elif selected_clinic and selected_date %}
-                <div class="alert alert-info">Нет доступных временных слотов.</div>
+                <div class="alert alert-info">Нет доступных временных слотов в выбранную дату.</div>
             {% endif %}
         </div>
         <div class="card-footer text-end">
@@ -62,17 +74,24 @@
 </div>
 
 <style>
-.card {
-    border-radius: 12px;
-    overflow: hidden;
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff, #0062cc);
 }
-.btn-outline-primary {
+.btn-outline-primary.active,
+.btn-outline-secondary.active,
+.btn-outline-success.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+.btn {
     border-radius: 8px;
+    padding: 0.6rem 0.4rem;
+    font-size: 0.9rem;
     transition: all 0.2s;
 }
-.btn-outline-primary:hover {
-    background: #007bff;
-    color: white;
+.btn:hover {
+    transform: translateY(-2px);
 }
 </style>
 {% endblock %}

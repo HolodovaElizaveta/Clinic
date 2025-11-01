@@ -1,6 +1,7 @@
 <!-- clinic/templates/clinic/base.html -->
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,28 +14,29 @@
     <!-- Ваши стили -->
     <link rel="stylesheet" href="{% static 'clinic/css/style.css' %}">
 </head>
+
 <body>
-  <!-- Шапка сайта -->
-<header class="header bg-white shadow-sm">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center py-3">
-            <!-- Логотип -->
-            <a href="/" class="logo text-decoration-none d-flex align-items-center">
-                <i class="bi bi-heart-pulse me-2 text-primary" style="font-size: 1.5rem;"></i>
-                <span class="fw-bold fs-4 text-primary">MEDCLINIC</span>
-            </a>
+    <!-- Шапка сайта -->
+    <header class="header bg-white shadow-sm">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center py-3">
+                <!-- Логотип -->
+                <a href="/" class="logo text-decoration-none d-flex align-items-center">
+                    <i class="bi bi-heart-pulse me-2 text-primary" style="font-size: 1.5rem;"></i>
+                    <span class="fw-bold fs-4 text-primary">MEDCLINIC</span>
+                </a>
 
-            <!-- Навигация -->
-            <nav class="nav d-none d-md-flex">
-                <a href="#doctors" class="nav-link px-3"><i class="bi bi-person-plus me-1"></i>Наши врачи</a>
-                <a href="#clinics" class="nav-link px-3"><i class="bi bi-hospital me-1"></i>Клиники</a>
-                <a href="#" class="nav-link px-3"><i class="bi bi-file-medical me-1"></i>Услуги</a>
-                <a href="#" class="nav-link px-3"><i class="bi bi-telephone me-1"></i>Контакты</a>
-            </nav>
+                <!-- Навигация -->
+                <nav class="nav d-none d-md-flex">
+                    <a href="#doctors" class="nav-link px-3"><i class="bi bi-person-plus me-1"></i>Наши врачи</a>
+                    <a href="#clinics" class="nav-link px-3"><i class="bi bi-hospital me-1"></i>Клиники</a>
+                    <a href="#" class="nav-link px-3"><i class="bi bi-file-medical me-1"></i>Услуги</a>
+                    <a href="#" class="nav-link px-3"><i class="bi bi-telephone me-1"></i>Контакты</a>
+                </nav>
 
-            <!-- Кнопки авторизации -->
-            <div class="auth-buttons d-flex align-items-center gap-3">
-                {% if user.is_authenticated %}
+                <!-- Кнопки авторизации -->
+                <div class="auth-buttons d-flex align-items-center gap-3">
+                    {% if user.is_authenticated %}
                     <!-- <span class="welcome text-muted d-none d-md-inline">
                         {% if user.role == 'patient' and user.patient_profile %}
                             Привет, {{ user.patient_profile.full_name }}!
@@ -46,17 +48,20 @@
                     </span> -->
 
                     {% if user.role == 'patient' and user.patient_profile %}
-                        <a href="{% url 'my_appointments' %}" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-calendar-check me-1"></i> Мои записи
-                        </a>
+                    <a href="{% url 'my_appointments' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-calendar-check me-1"></i> Мои записи
+                    </a>
                     {% elif user.role == 'doctor' and user.doctor_profile %}
-                        <a href="{% url 'doctor_appointments' %}" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-calendar-event me-1"></i> Мои приёмы
-                        </a>
+                    <a href="{% url 'doctor_appointments' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-calendar-event me-1"></i> Мои приёмы
+                    </a>
                     {% elif user.role == 'admin' %}
-                        <a href="{% url 'admin:index' %}" class="btn btn-outline-danger btn-sm">
-                            <i class="bi bi-shield-lock me-1"></i> Админка
-                        </a>
+                    <a href="{% url 'admin_appointments' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-calendar-check me-1"></i> Упрвление записями
+                    </a>
+                    <a href="{% url 'admin:index' %}" class="btn btn-outline-danger btn-sm ms-2">
+                        <i class="bi bi-shield-lock me-1"></i> Django Admin
+                    </a>
                     {% endif %}
 
                     <form method="post" action="{% url 'logout' %}" style="display: inline;">
@@ -65,15 +70,15 @@
                             <i class="bi bi-box-arrow-right me-1"></i> Выйти
                         </button>
                     </form>
-                {% else %}
+                    {% else %}
                     <a href="{% url 'login' %}" class="btn btn-primary btn-sm">
                         <i class="bi bi-box-arrow-in-right me-1"></i> Вход / Регистрация
                     </a>
-                {% endif %}
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
-</header>
+    </header>
 
     <!-- Основное содержимое -->
     <main class="main">
@@ -88,8 +93,8 @@
                 <div class="col-md-4">
                     <div class="text-center">
                         <h5><i class="bi bi-qr-code me-2"></i>Свяжитесь с нами</h5>
-                        <img src="https://via.placeholder.com/150?text=QR+Code" alt="QR Code" class="img-fluid mb-3 rounded"
-                             style="max-width: 150px; border: 2px solid #fff;">
+                        <img src="https://via.placeholder.com/150?text=QR+Code" alt="QR Code"
+                            class="img-fluid mb-3 rounded" style="max-width: 150px; border: 2px solid #fff;">
                         <p class="small text-center">
                             Сканируйте QR-код для быстрого доступа к нашему приложению.
                         </p>
@@ -110,9 +115,12 @@
                         MEDCLINIC — ваш надежный партнер в заботе о здоровье.
                     </p>
                     <div class="d-flex flex-column gap-2">
-                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-info-circle me-1"></i> О компании</a>
-                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-newspaper me-1"></i> Новости</a>
-                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-question-circle me-1"></i> Частые вопросы</a>
+                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-info-circle me-1"></i>
+                            О компании</a>
+                        <a href="#" class="text-decoration-none text-white small"><i class="bi bi-newspaper me-1"></i>
+                            Новости</a>
+                        <a href="#" class="text-decoration-none text-white small"><i
+                                class="bi bi-question-circle me-1"></i> Частые вопросы</a>
                     </div>
                 </div>
                 <!-- Правый блок: Социальные сети и подписка -->
@@ -150,4 +158,5 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{% static 'clinic/js/main.js' %}"></script>
 </body>
+
 </html>

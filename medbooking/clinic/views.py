@@ -167,14 +167,20 @@ def doctor_appointments(request):
     ).order_by('schedule__date', 'schedule__time')
     return render(request, 'clinic/appointments/doctor_appointments.html', {'appointments': appointments})
 
-# clinic/views.py
 @login_required
 def create_appointment(request, doctor_id):
     doctor = get_object_or_404(Doctor, id=doctor_id)
     patient = request.user.patient_profile
-
-    # Получаем клиники врача
     clinics = doctor.clinics.all()
+
+    # Получаем все уникальные даты, на которые у врача есть расписание в выбранной клинике
+    available_dates = []
+    selected_clinic = request.GET.get('clinic') or request.POST.get('clinic_id')
+    if selected_clinic:
+        available_dates = Schedule.objects.filter(
+            doctor=doctor,
+            clinic_id=selected_clinic
+        ).values_list('date', flat=True).distinct().order_by('date')
 
     if request.method == 'POST':
         clinic_id = request.POST.get('clinic_id')
@@ -187,11 +193,11 @@ def create_appointment(request, doctor_id):
                 'doctor': doctor,
                 'clinics': clinics,
                 'selected_clinic': clinic_id,
+                'available_dates': available_dates,
                 'selected_date': date,
-                'times': []
+                'times': [],
             })
 
-        # Найти слот
         try:
             schedule = Schedule.objects.get(
                 doctor=doctor,
@@ -203,7 +209,6 @@ def create_appointment(request, doctor_id):
             messages.error(request, "Выбранное время недоступно.")
             return redirect('create_appointment', doctor_id=doctor_id)
 
-        # Проверка, что слот свободен
         if Appointment.objects.filter(schedule=schedule).exists():
             messages.error(request, "Это время уже занято.")
             return redirect('create_appointment', doctor_id=doctor_id)
@@ -216,13 +221,10 @@ def create_appointment(request, doctor_id):
         messages.success(request, "Вы успешно записаны на приём!")
         return redirect('my_appointments')
 
-    # GET-запрос: показать форму
-    selected_clinic = request.GET.get('clinic')
+    # GET-запрос
     selected_date = request.GET.get('date')
     times = []
-
     if selected_clinic and selected_date:
-        # Получаем свободные временные слоты
         occupied_schedules = Appointment.objects.filter(
             schedule__doctor=doctor,
             schedule__clinic_id=selected_clinic,
@@ -239,8 +241,9 @@ def create_appointment(request, doctor_id):
         'doctor': doctor,
         'clinics': clinics,
         'selected_clinic': selected_clinic,
+        'available_dates': available_dates,
         'selected_date': selected_date,
-        'times': times
+        'times': times,
     })
 
 @login_required
@@ -252,9 +255,10 @@ def cancel_appointment(request, appointment_id):
     messages.success(request, "Запись отменена.")
     return redirect('my_appointments')
 
+# clinic/views.py
+
 @login_required
 def update_appointment_status(request, appointment_id):
-    """Врач обновляет статус записи"""
     if request.user.role != 'doctor':
         return redirect('main')
     appointment = get_object_or_404(Appointment, id=appointment_id, schedule__doctor__user=request.user)
@@ -263,7 +267,9 @@ def update_appointment_status(request, appointment_id):
         if status in [AppointmentStatus.PLANNED, AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED]:
             appointment.status = status
             appointment.save()
-            messages.success(request, "Статус обновлён.")
+            messages.success(request, "Статус приёма обновлён.")
+        else:
+            messages.error(request, "Недопустимый статус.")
     return redirect('doctor_appointments')
 
 # clinic/views.py
@@ -334,7 +340,7 @@ def create_visit_history(request, appointment_id):
                 owner=appointment.patient,
                 appointment=appointment
             )
-            # Убедитесь, что поле называется file (или file_path — но везде одинаково!)
+            
             medical_file.file_path.save(
                 f'заключение_{appointment.id}.pdf',
                 ContentFile(pdf_file),
@@ -364,3 +370,65 @@ def download_medical_file(request, file_id):
         as_attachment=False,  # inline — открывать в браузере
         filename=f"заключение_{file_id}.pdf"
     )
+
+# clinic/views.py
+
+@login_required
+def admin_appointments(request):
+    """Страница 'Мои записи' для администратора клиники"""
+    if request.user.role != 'admin':
+        return redirect('main')
+
+    # Все клиники, где есть хотя бы один врач
+    clinics = Clinic.objects.filter(doctors__isnull=False).distinct()
+
+    selected_clinic_id = request.GET.get('clinic')
+    appointments = []
+    patients = []
+    doctors = []
+
+    if selected_clinic_id:
+        try:
+            selected_clinic = Clinic.objects.get(id=selected_clinic_id)
+            # Все приёмы в выбранной клинике
+            appointments = Appointment.objects.filter(
+                schedule__clinic=selected_clinic
+            ).select_related(
+                'patient', 'schedule__doctor', 'schedule__clinic'
+            ).order_by('-schedule__date', '-schedule__time')
+
+            # Все пациенты и врачи в этой клинике
+            patients = Patient.objects.filter(
+                appointments__schedule__clinic=selected_clinic
+            ).distinct()
+            doctors = Doctor.objects.filter(clinics=selected_clinic).distinct()
+        except Clinic.DoesNotExist:
+            messages.error(request, "Клиника не найдена.")
+    else:
+        selected_clinic = None
+
+    return render(request, 'clinic/appointments/admin_appointments.html', {
+        'clinics': clinics,
+        'selected_clinic_id': selected_clinic_id,
+        'appointments': appointments,
+        'patients': patients,
+        'doctors': doctors,
+    })
+
+
+@login_required
+def admin_update_appointment_status(request, appointment_id):
+    """Админ может обновлять статус любого приёма"""
+    if request.user.role != 'admin':
+        return redirect('main')
+    
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+    if request.method == 'POST':
+        status = request.POST.get('status')
+        if status in [AppointmentStatus.PLANNED, AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED]:
+            appointment.status = status
+            appointment.save()
+            messages.success(request, f"Статус приёма обновлён на «{appointment.get_status_display()}».")
+        else:
+            messages.error(request, "Недопустимый статус.")
+    return redirect('admin_appointments')

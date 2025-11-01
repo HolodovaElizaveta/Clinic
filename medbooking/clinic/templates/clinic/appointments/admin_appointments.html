@@ -1,0 +1,159 @@
+{% extends 'clinic/base.html' %}
+{% load clinic_extras %}
+{% block title %}Мои записи (Админ){% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="fw-bold mb-4 text-center text-primary">Управление записями</h2>
+
+    <!-- Выбор клиники -->
+    <div class="mb-4">
+        <form method="get" class="d-flex gap-3 align-items-end flex-wrap">
+            <div>
+                <label class="form-label fw-bold">Выберите клинику:</label>
+                <select name="clinic" class="form-select" required>
+                    <option value="">— Все клиники —</option>
+                    {% for clinic in clinics %}
+                        <option value="{{ clinic.id }}" {% if selected_clinic_id == clinic.id|stringformat:"s" %}selected{% endif %}>
+                            {{ clinic.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Показать</button>
+        </form>
+    </div>
+
+    {% if selected_clinic_id %}
+        <!-- Статистика -->
+        <div class="row mb-4 g-3">
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Пациентов</h5>
+                        <p class="display-6">{{ patients|length }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Врачей</h5>
+                        <p class="display-6">{{ doctors|length }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Приёмов</h5>
+                        <p class="display-6">{{ appointments|length }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Приёмы -->
+        <h4 class="mb-3">Приёмы в клинике</h4>
+        {% if appointments %}
+            <div class="row g-4">
+                {% for appt in appointments %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card appointment-card shadow-sm border-0 h-100">
+                            <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">{{ appt.patient.full_name }}</h6>
+                                <span class="badge rounded-pill {% if appt.status == 'cancelled' %}bg-danger{% elif appt.status == 'completed' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                    {{ appt.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-unstyled small">
+                                    <li><strong>Врач:</strong> {{ appt.schedule.doctor.full_name }}</li>
+                                    <li><strong>Дата:</strong> {{ appt.schedule.date }}</li>
+                                    <li><strong>Время:</strong> {{ appt.schedule.time }}</li>
+                                    <li><strong>Телефон:</strong> {{ appt.patient.phone }}</li>
+                                </ul>
+
+                                <!-- Изменение статуса -->
+                                <form method="post" action="{% url 'admin_update_appointment_status' appt.id %}" class="mt-2">
+                                    {% csrf_token %}
+                                    <select name="status" class="form-select form-select-sm mb-1">
+                                        <option value="planned" {% if appt.status == 'planned' %}selected{% endif %}>Запланирован</option>
+                                        <option value="completed" {% if appt.status == 'completed' %}selected{% endif %}>Завершён</option>
+                                        <option value="cancelled" {% if appt.status == 'cancelled' %}selected{% endif %}>Отменён</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-outline-primary btn-sm w-100">Обновить статус</button>
+                                </form>
+                            </div>
+
+                            <!-- PDF-заключения -->
+                            {% if appt.medical_files.exists %}
+                            <div class="card-footer bg-light">
+                                <strong class="text-muted small">Заключения:</strong>
+                                <div class="mt-1 d-flex flex-wrap gap-1">
+                                    {% for file in appt.medical_files.all %}
+                                        {% if file|can_view:request.user %}
+                                            <a href="{% url 'download_medical_file' file.id %}" target="_blank" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-file-earmark-pdf"></i>
+                                            </a>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">Нет приёмов в выбранной клинике.</div>
+        {% endif %}
+
+        <!-- Списки -->
+        <div class="row mt-5">
+            <div class="col-md-6">
+                <h5>Пациенты</h5>
+                <ul class="list-group">
+                    {% for patient in patients %}
+                        <li class="list-group-item">{{ patient.full_name }} ({{ patient.phone }})</li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">Нет пациентов</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h5>Врачи</h5>
+                <ul class="list-group">
+                    {% for doctor in doctors %}
+                        <li class="list-group-item">{{ doctor.full_name }} ({{ doctor.specialization }})</li>
+                    {% empty %}
+                        <li class="list-group-item text-muted">Нет врачей</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">Выберите клинику для просмотра данных.</div>
+    {% endif %}
+
+    <div class="text-center mt-4">
+        <a href="{% url 'main' %}" class="btn btn-outline-primary px-4 py-2">
+            ← Вернуться на главную
+        </a>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff, #0062cc);
+}
+.appointment-card {
+    border-radius: 16px;
+    transition: all 0.3s ease;
+}
+.appointment-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0,123,255,0.15);
+}
+</style>
+{% endblock %}
