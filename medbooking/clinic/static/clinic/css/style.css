@@ -1,4 +1,4 @@
-/* clinic/static/clinic/css/style.css */
+/* === ГЛОБАЛЬНЫЕ СТИЛИ === */
 * {
     margin: 0;
     padding: 0;
@@ -130,6 +130,8 @@ p { font-size: 1rem; color: #555; }
 
 .hero-content h1 {
     margin-bottom: 1.2rem;
+    font-size: 2.8rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
 }
 
 .hero-content p {
@@ -171,12 +173,15 @@ p { font-size: 1rem; color: #555; }
     text-align: center;
     margin-bottom: 1rem;
     color: #007bff;
+    font-size: 2.2rem;
+    letter-spacing: 1px;
 }
 
 .doctors-section p, .clinics-section p {
     text-align: center;
     margin-bottom: 2.5rem;
     color: #666;
+    font-size: 1.1rem;
 }
 
 /* Фильтр */
@@ -192,6 +197,7 @@ p { font-size: 1rem; color: #555; }
 .filter-container label {
     font-weight: 600;
     color: #333;
+    font-size: 1rem;
 }
 
 .filter-container select {
@@ -200,19 +206,45 @@ p { font-size: 1rem; color: #555; }
     border-radius: 6px;
     font-size: 1rem;
     min-width: 200px;
+    background: white;
+    transition: border-color 0.2s;
 }
 
-/* Карусели */
-.doctors-carousel, .clinics-carousel {
+.filter-container select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
+}
+
+/* === КАРУСЕЛИ — КРАСИВО И С 3 КАРТОЧКАМИ === */
+
+.carousel-container {
     position: relative;
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
+    width: 100%;
+    max-width: 900px; /* 3 * 280 + 2 * 28 = 900px */
+    margin: 0 auto;
     overflow: hidden;
     padding: 1rem 0;
 }
 
+.carousel-wrapper {
+    display: flex;
+    gap: 1.8rem; /* ~28.8px */
+    padding: 0 1rem;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Скрываем скроллбар */
+}
+
+.carousel-wrapper::-webkit-scrollbar {
+    display: none;
+}
+
 .carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
     background: white;
     border: 2px solid #e0e0e0;
     border-radius: 50%;
@@ -223,39 +255,66 @@ p { font-size: 1rem; color: #555; }
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 10;
+    user-select: none;
+}
+
+.carousel-arrow.left {
+    left: -20px;
+}
+
+.carousel-arrow.right {
+    right: -20px;
 }
 
 .carousel-arrow:hover {
     background: #f0f0f0;
     border-color: #007bff;
     color: #007bff;
+    transform: translateY(-50%) scale(1.1);
 }
 
-.doctors-wrapper, .clinics-wrapper {
+/* Индикаторы точек (как у Slick) */
+.carousel-dots {
     display: flex;
-    gap: 1.8rem;
-    overflow-x: auto;
-    padding: 0 1rem;
-    scrollbar-width: thin;
-    scrollbar-color: #ccc transparent;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 1rem;
 }
 
-.doctors-wrapper::-webkit-scrollbar,
-.clinics-wrapper::-webkit-scrollbar {
+.carousel-dot {
+    width: 8px;
     height: 8px;
-}
-
-.doctors-wrapper::-webkit-scrollbar-thumb,
-.clinics-wrapper::-webkit-scrollbar-thumb {
+    border-radius: 50%;
     background: #ccc;
-    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
-/* Карточки — ОДИНАКОВЫЙ РАЗМЕР */
+.carousel-dot.active {
+    background: #007bff;
+}
+
+/* Адаптивность — на мобильных 1 карточка */
+@media (max-width: 768px) {
+    .carousel-container {
+        max-width: 320px;
+    }
+    .carousel-wrapper {
+        gap: 1rem;
+    }
+    .doctor-card, .clinic-card {
+        flex: 0 0 100%;
+        max-width: 320px;
+    }
+}
+
+/* === КАРТОЧКИ — ОДИНАКОВЫЙ РАЗМЕР И КРАСИВЫЕ === */
+
 .doctor-card, .clinic-card {
-    width: 280px;
+    flex: 0 0 280px;
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -263,6 +322,7 @@ p { font-size: 1rem; color: #555; }
     display: flex;
     flex-direction: column;
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .doctor-card:hover, .clinic-card:hover {
@@ -296,17 +356,34 @@ p { font-size: 1rem; color: #555; }
 .doctor-info h3, .clinic-info h3 {
     margin-bottom: 0.6rem;
     color: #007bff;
+    font-size: 1.1rem;
 }
 
 .specialization, .address, .phone, .experience, .bio {
     margin-bottom: 0.6rem;
     color: #555;
+    font-size: 0.9rem;
 }
 
 .bio {
     flex: 1;
     font-size: 0.95rem;
     line-height: 1.5;
+}
+
+.price-tag {
+    font-weight: 700;
+    color: #007bff;
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+/* Кнопка записи */
+.doctor-card .btn, .clinic-card .btn {
+    margin-top: auto;
+    align-self: flex-start;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
 }
 
 /* Футер */
@@ -405,178 +482,4 @@ p { font-size: 1rem; color: #555; }
         width: 100%;
         max-width: 320px;
     }
-}
-/* === Страница врача — современный дизайн === */
-
-.doctor-page-layout {
-    display: flex;
-    gap: 2rem;
-    align-items: flex-start;
-    flex-wrap: wrap;
-}
-
-.doctor-photo-column {
-    flex: 0 0 280px;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.doctor-photo-large {
-    width: 100%;
-    height: auto;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    object-fit: cover;
-}
-
-.doctor-role {
-    font-size: 0.95rem;
-    color: #555;
-    line-height: 1.5;
-    background: #f8f9fa;
-    padding: 0.8rem;
-    border-radius: 8px;
-    margin-top: 0.5rem;
-}
-
-.patient-type {
-    display: flex;
-    align-items: center;
-    font-size: 0.9rem;
-    color: #666;
-    background: #f8f9fa;
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    margin-top: 0.5rem;
-}
-
-.patient-type svg {
-    fill: #007bff;
-}
-
-/* Центральная колонка */
-.doctor-info-column {
-    flex: 1;
-    min-width: 350px;
-}
-
-.doctor-info-column h1 {
-    font-size: 2.2rem;
-    color: #333;
-    margin-bottom: 0.5rem;
-}
-
-.doctor-info-column h2 {
-    font-size: 1.4rem;
-    color: #007bff;
-    margin: 1.5rem 0 1rem;
-    font-weight: 600;
-}
-
-.info-row {
-    margin: 0.8rem 0;
-    line-height: 1.6;
-    color: #444;
-}
-
-.info-row strong {
-    color: #333;
-    font-weight: 600;
-}
-
-.specializations-list {
-    list-style: disc;
-    padding-left: 1.5rem;
-    margin: 0.5rem 0 1rem;
-    line-height: 1.6;
-}
-
-.specializations-list li {
-    margin: 0.3rem 0;
-    color: #555;
-}
-
-.show-more-link {
-    margin-top: 1rem;
-    font-size: 0.95rem;
-}
-
-/* Правая колонка — цена и кнопка */
-.doctor-action-column {
-    flex: 0 0 300px;
-}
-
-.price-card {
-    background: white;
-    border-radius: 16px;
-    padding: 1.5rem;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-    text-align: center;
-}
-
-.price-header {
-    font-size: 1.1rem;
-    color: #666;
-    margin-bottom: 0.5rem;
-}
-
-.price-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #007bff;
-    margin: 0.5rem 0;
-}
-
-/* Адаптивность */
-@media (max-width: 992px) {
-    .doctor-page-layout {
-        flex-direction: column;
-    }
-
-    .doctor-photo-column,
-    .doctor-info-column,
-    .doctor-action-column {
-        flex: 1 1 100%;
-        max-width: 100%;
-    }
-
-    .doctor-photo-large {
-        width: 100%;
-        height: 300px;
-    }
-}
-
-@media (max-width: 576px) {
-    .price-value {
-        font-size: 1.6rem;
-    }
-
-    .doctor-role,
-    .patient-type {
-        font-size: 0.85rem;
-        padding: 0.5rem;
-    }
-}
-/* Стили для страницы клиники */
-.clinic-detail-photo {
-    width: 100%;
-    max-width: 600px;
-    height: auto;
-    border-radius: 12px;
-    margin: 1.5rem 0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-.clinic-details {
-    background: #f9f9f9;
-    padding: 1.5rem;
-    border-radius: 12px;
-    margin: 1.5rem 0;
-}
-
-.clinic-description p {
-    margin-top: 0.5rem;
-    line-height: 1.6;
-    color: #555;
 }
