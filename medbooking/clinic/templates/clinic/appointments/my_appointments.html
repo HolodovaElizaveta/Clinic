@@ -6,78 +6,198 @@
 <div class="container py-5">
     <h2 class="fw-bold mb-4 text-center text-primary">Мои записи</h2>
 
-    {% if appointments %}
-        <div class="row g-4">
-            {% for appt in appointments %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="card appointment-card shadow-sm border-0 h-100">
-                        <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">{{ appt.schedule.doctor.full_name }}</h5>
-                            <span class="badge rounded-pill {% if appt.status == 'cancelled' %}bg-danger{% elif appt.status == 'completed' %}bg-success{% else %}bg-warning text-dark{% endif %}">
-                                {{ appt.get_status_display }}
-                            </span>
-                        </div>
-                        <div class="card-body">
-                            <!-- НАПОМИНАНИЕ ЗАВТРА -->
-                            {% if appt.schedule.date == tomorrow %}
-                                <div class="alert alert-info alert-sm mb-3">
-                                    <i class="bi bi-bell"></i> Завтра ваш приём!
+    <!-- Вкладки статусов -->
+    <ul class="nav nav-tabs mb-4" id="statusTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="planned-tab" data-bs-toggle="tab" data-bs-target="#planned" type="button">Запланированные</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button">Завершённые</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button">Отменённые</button>
+        </li>
+    </ul>
+
+    <!-- Фильтр по дате (общий, но применяется в каждой вкладке) -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label for="dateFilter" class="form-label fw-bold">Фильтр по дате:</label>
+            <input type="date" id="dateFilter" class="form-control">
+        </div>
+    </div>
+
+    <div class="tab-content" id="statusTabContent">
+        <!-- Запланированные -->
+        <div class="tab-pane fade show active" id="planned" role="tabpanel">
+            {% if appointments_planned %}
+                <div class="row g-4" id="planned-appointments">
+                    {% for appt in appointments_planned %}
+                        <div class="col-md-6 col-lg-4" data-date="{{ appt.schedule.date|date:'Y-m-d' }}">
+                            <div class="card appointment-card shadow-sm border-0 h-100">
+                                <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">{{ appt.schedule.doctor.full_name }}</h5>
+                                    <span class="badge rounded-pill bg-warning text-dark">Запланирован</span>
                                 </div>
-                            {% endif %}
-
-                            <ul class="list-unstyled mb-3">
-                                <li class="d-flex align-items-start mb-2">
-                                    <i class="bi bi-calendar me-2 text-primary"></i>
-                                    <span><strong>Дата:</strong> {{ appt.schedule.date }}</span>
-                                </li>
-                                <li class="d-flex align-items-start mb-2">
-                                    <i class="bi bi-clock me-2 text-primary"></i>
-                                    <span><strong>Время:</strong> {{ appt.schedule.time }}</span>
-                                </li>
-                                <li class="d-flex align-items-start mb-2">
-                                    <i class="bi bi-hospital me-2 text-primary"></i>
-                                    <span><strong>Клиника:</strong> {{ appt.schedule.clinic.name }}</span>
-                                </li>
-                                <li class="d-flex align-items-start">
-                                    <i class="bi bi-geo-alt me-2 text-primary"></i>
-                                    <span><strong>Адрес:</strong> {{ appt.schedule.clinic.address|truncatechars:70 }}</span>
-                                </li>
-                            </ul>
-
-                            {% if appt.status == 'planned' %}
-                                <a href="{% url 'cancel_appointment' appt.id %}" 
-                                   class="btn btn-outline-danger btn-sm w-100 mt-2"
-                                   onclick="return confirm('Вы уверены, что хотите отменить запись?')">
-                                    <i class="bi bi-x-circle me-1"></i> Отменить запись
-                                </a>
-                            {% endif %}
-                        </div>
-
-                        {% if appt.medical_files.exists %}
-                        <div class="card-footer bg-light">
-                            <strong class="text-muted">Заключения:</strong>
-                            <div class="mt-2 d-flex flex-wrap gap-2">
-                                {% for file in appt.medical_files.all %}
-                                    {% if file|can_view:request.user %}
-                                        <a href="{% url 'download_medical_file' file.id %}" target="_blank" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-file-earmark-pdf me-1"></i> PDF
-                                        </a>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Нет доступа</span>
+                                <div class="card-body">
+                                    {% if appt.schedule.date == tomorrow %}
+                                        <div class="alert alert-info alert-sm mb-3">
+                                            <i class="bi bi-bell"></i> Завтра ваш приём!
+                                        </div>
                                     {% endif %}
-                                {% endfor %}
+                                    <ul class="list-unstyled mb-3">
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-person me-2 text-primary"></i>
+                                            <span><strong>Специализация:</strong> {{ appt.schedule.doctor.specialization }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-calendar me-2 text-primary"></i>
+                                            <span><strong>Дата:</strong> {{ appt.schedule.date }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-clock me-2 text-primary"></i>
+                                            <span><strong>Время:</strong> {{ appt.schedule.time }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-hospital me-2 text-primary"></i>
+                                            <span><strong>Клиника:</strong> {{ appt.schedule.clinic.name }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start">
+                                            <i class="bi bi-geo-alt me-2 text-primary"></i>
+                                            <span><strong>Адрес:</strong> {{ appt.schedule.clinic.address|truncatechars:70 }}</span>
+                                        </li>
+                                    </ul>
+                                    <a href="{% url 'cancel_appointment' appt.id %}" 
+                                       class="btn btn-outline-danger btn-sm w-100 mt-2"
+                                       onclick="return confirm('Вы уверены, что хотите отменить запись?')">
+                                        <i class="bi bi-x-circle me-1"></i> Отменить запись
+                                    </a>
+                                </div>
+                                {% if appt.medical_files.exists %}
+                                <div class="card-footer bg-light">
+                                    <strong class="text-muted">Заключения:</strong>
+                                    <div class="mt-2 d-flex flex-wrap gap-2">
+                                        {% for file in appt.medical_files.all %}
+                                            {% if file|can_view:request.user %}
+                                                <a href="{% url 'download_medical_file' file.id %}" target="_blank" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                                                </a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
-                        {% endif %}
-                    </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
+            {% else %}
+                <div class="alert alert-info text-center">Нет запланированных записей.</div>
+            {% endif %}
         </div>
-    {% else %}
-        <div class="alert alert-info text-center shadow-sm mt-4 rounded-3">
-            <i class="bi bi-calendar-x me-2"></i>У вас пока нет записей.
+
+        <!-- Завершённые -->
+        <div class="tab-pane fade" id="completed" role="tabpanel">
+            {% if appointments_completed %}
+                <div class="row g-4" id="completed-appointments">
+                    {% for appt in appointments_completed %}
+                        <div class="col-md-6 col-lg-4" data-date="{{ appt.schedule.date|date:'Y-m-d' }}">
+                            <div class="card appointment-card shadow-sm border-0 h-100">
+                                <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">{{ appt.schedule.doctor.full_name }}</h5>
+                                    <span class="badge rounded-pill bg-success">Завершён</span>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled mb-3">
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-person me-2 text-primary"></i>
+                                            <span><strong>Специализация:</strong> {{ appt.schedule.doctor.specialization }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-calendar me-2 text-primary"></i>
+                                            <span><strong>Дата:</strong> {{ appt.schedule.date }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-clock me-2 text-primary"></i>
+                                            <span><strong>Время:</strong> {{ appt.schedule.time }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-hospital me-2 text-primary"></i>
+                                            <span><strong>Клиника:</strong> {{ appt.schedule.clinic.name }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start">
+                                            <i class="bi bi-geo-alt me-2 text-primary"></i>
+                                            <span><strong>Адрес:</strong> {{ appt.schedule.clinic.address|truncatechars:70 }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                {% if appt.medical_files.exists %}
+                                <div class="card-footer bg-light">
+                                    <strong class="text-muted">Заключения:</strong>
+                                    <div class="mt-2 d-flex flex-wrap gap-2">
+                                        {% for file in appt.medical_files.all %}
+                                            {% if file|can_view:request.user %}
+                                                <a href="{% url 'download_medical_file' file.id %}" target="_blank" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                                                </a>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center">Нет завершённых записей.</div>
+            {% endif %}
         </div>
-    {% endif %}
+
+        <!-- Отменённые -->
+        <div class="tab-pane fade" id="cancelled" role="tabpanel">
+            {% if appointments_cancelled %}
+                <div class="row g-4" id="cancelled-appointments">
+                    {% for appt in appointments_cancelled %}
+                       <div class="col-md-6 col-lg-4" data-date="{{ appt.schedule.date|date:'Y-m-d' }}">
+                            <div class="card appointment-card shadow-sm border-0 h-100">
+                                <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">{{ appt.schedule.doctor.full_name }}</h5>
+                                    <span class="badge rounded-pill bg-danger">Отменён</span>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled mb-3">
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-person me-2 text-primary"></i>
+                                            <span><strong>Специализация:</strong> {{ appt.schedule.doctor.specialization }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-calendar me-2 text-primary"></i>
+                                            <span><strong>Дата:</strong> {{ appt.schedule.date }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-clock me-2 text-primary"></i>
+                                            <span><strong>Время:</strong> {{ appt.schedule.time }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start mb-2">
+                                            <i class="bi bi-hospital me-2 text-primary"></i>
+                                            <span><strong>Клиника:</strong> {{ appt.schedule.clinic.name }}</span>
+                                        </li>
+                                        <li class="d-flex align-items-start">
+                                            <i class="bi bi-geo-alt me-2 text-primary"></i>
+                                            <span><strong>Адрес:</strong> {{ appt.schedule.clinic.address|truncatechars:70 }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center">Нет отменённых записей.</div>
+            {% endif %}
+        </div>
+    </div>
 
     <div class="text-center mt-4">
         <a href="{% url 'main' %}" class="btn btn-outline-primary px-4 py-2">
@@ -85,6 +205,28 @@
         </a>
     </div>
 </div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filter = document.getElementById('dateFilter');
+    if (!filter) return;
+
+    function applyFilter() {
+        const selected = filter.value; // YYYY-MM-DD
+        const cards = document.querySelectorAll('.col-md-6[data-date]');
+        cards.forEach(card => {
+            card.style.display = (!selected || card.dataset.date === selected) ? 'block' : 'none';
+        });
+    }
+
+    filter.addEventListener('change', applyFilter);
+    document.querySelectorAll('#statusTabs .nav-link').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', applyFilter);
+    });
+});
+</script>
+
 
 <style>
 .bg-gradient-primary {
@@ -99,4 +241,5 @@
     box-shadow: 0 8px 24px rgba(0,123,255,0.2);
 }
 </style>
+
 {% endblock %}

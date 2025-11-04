@@ -188,8 +188,13 @@ def my_appointments(request):
         schedule__date__gte=now.date(),
         schedule__date__lte=tomorrow.date()
     ).select_related('schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
+    patient = request.user.patient_profile
+    base_qs = patient.appointments.select_related('schedule__doctor', 'schedule__clinic')
 
     return render(request, 'clinic/appointments/my_appointments.html', {
+        'appointments_planned': base_qs.filter(status=AppointmentStatus.PLANNED).order_by('-schedule__date'),
+        'appointments_completed': base_qs.filter(status=AppointmentStatus.COMPLETED).order_by('-schedule__date'),
+        'appointments_cancelled': base_qs.filter(status=AppointmentStatus.CANCELLED).order_by('-schedule__date'),
         'appointments': appointments,
         'tomorrow': date.today() + timedelta(days=1),
         'upcoming_appointments': upcoming_appointments,
@@ -207,6 +212,11 @@ def doctor_appointments(request):
         'patient', 'schedule__clinic'
     ).order_by('schedule__date', 'schedule__time')
 
+    base_qs = Appointment.objects.filter(
+        schedule__doctor=doctor
+    ).select_related('patient', 'schedule__clinic', 'schedule__doctor')
+
+
     # Уведомления для врача: записи на сегодня и завтра
     now = datetime.now()
     tomorrow = now + timedelta(days=1)
@@ -218,6 +228,9 @@ def doctor_appointments(request):
     ).select_related('patient', 'schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
 
     return render(request, 'clinic/appointments/doctor_appointments.html', {
+        'appointments_planned': base_qs.filter(status=AppointmentStatus.PLANNED).order_by('schedule__date', 'schedule__time'),
+        'appointments_completed': base_qs.filter(status=AppointmentStatus.COMPLETED).order_by('-schedule__date', '-schedule__time'),
+        'appointments_cancelled': base_qs.filter(status=AppointmentStatus.CANCELLED).order_by('-schedule__date', '-schedule__time'),
         'appointments': appointments,
         'doctor': doctor,
         'upcoming_appointments_doctor': upcoming_appointments_doctor,

@@ -1,10 +1,9 @@
-<!-- clinic/templates/clinic/doctors/list.html -->
 {% extends 'clinic/base.html' %}
 
 {% block title %}{{ doctor.full_name }}{% endblock %}
 
 {% block content %}
-<div class="container" style="padding: 2rem 1rem; max-width: 1200px;">
+<div class="container">
     <div class="doctor-page-layout">
         <!-- Левая колонка — фото -->
         <div class="doctor-photo-column">
@@ -17,7 +16,7 @@
                 {{ doctor.specialization }}, Заведующий отделением-врач-косметолог
             </div>
             <div class="patient-type">
-                <svg width="24" height="24" fill="currentColor" style="margin-right: 8px;">
+                <svg width="24" height="24" fill="currentColor">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c1.66 0 5.33 0 6 0v6H6v-6c.67 0 4.34 0 6 0zm-6 2a1 1 0 112 0 1 1 0 01-2 0zm8 0a1 1 0 112 0 1 1 0 01-2 0z"/>
                 </svg>
                 Прием взрослых
@@ -36,9 +35,9 @@
             <div class="info-row">
                 <strong>Клиника:</strong>
                 {% for clinic in doctor.clinics.all %}
-                    <a href="{% url 'clinic_detail' clinic.id %}"><p  style="color: #007bff; text-decoration: underline;">
+                    <a href="{% url 'clinic_detail' clinic.id %}" style="color: #007bff; text-decoration: underline;">
                         {{ clinic.name }}
-                    </p>{% if not forloop.last %} {% endif %}</a>
+                    </a>{% if not forloop.last %}, {% endif %}
                 {% empty %}
                     Не указано
                 {% endfor %}
@@ -55,6 +54,9 @@
                 </ul>
             </div>
 
+            <div class="info-row">
+          
+            </div>
         </div>
 
         <!-- Правая колонка — цена и запись -->
@@ -63,10 +65,10 @@
                 <div class="price-header">Стоимость:</div>
                 <div class="price-value">{{ doctor.price }} ₽</div>
                 {% if user.is_authenticated and user.role == 'patient' %}
-    <a href="{% url 'create_appointment' doctor.id %}" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Записаться на приём</a>
-{% elif not user.is_authenticated %}
-    <a href="{% url 'login' %}" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Записаться на приём</a>
-{% endif %}
+                    <a href="{% url 'create_appointment' doctor.id %}" class="btn btn-primary">Записаться на приём</a>
+                {% elif not user.is_authenticated %}
+                    <a href="{% url 'login' %}" class="btn btn-primary">Записаться на приём</a>
+                {% endif %}
             </div>
         </div>
     </div>
