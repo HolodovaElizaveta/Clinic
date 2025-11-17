@@ -48,89 +48,89 @@
     </section>
 
     <!-- Блок "НАШИ ВРАЧИ" -->
-    <section id="doctors" class="doctors-section">
-        <div class="container">
-            <h2>НАШИ ВРАЧИ</h2>
-            <p>Квалифицированные специалисты, готовые оказать помощь каждому пациенту.</p>
+<section id="doctors" class="doctors-section">
+    <div class="container text-center mb-4">
+        <h2>НАШИ ВРАЧИ</h2>
+        <p class="mb-3">Квалифицированные специалисты, готовые оказать помощь каждому пациенту.</p>
 
-            <!-- Фильтр по специализации -->
-            <div class="filter-container">
-                <label for="specialization-filter">Фильтр по специализации:</label>
-                <select id="specialization-filter" onchange="filterDoctors()">
-                    <option value="">Все специализации</option>
-                    {% for spec in specializations %}
-                        <option value="{{ spec }}">{{ spec }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-
-        <!-- Карусель врачей -->
-        <div class="carousel-container">
-            <button class="carousel-arrow left" onclick="scrollDoctors(-1)">&#10094;</button>
-            <div class="carousel-wrapper" id="doctors-wrapper">
-                {% for doctor in doctors %}
-                    <div class="doctor-card" data-specialization="{{ doctor.specialization }}">
-                        <div class="doctor-photo">
-                            {% if doctor.photo_url %}
-                                <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}">
-                            {% else %}
-                                <img src="https://via.placeholder.com/300x300?text=Врач" alt="Фото врача">
-                            {% endif %}
-                        </div>
-                        <div class="doctor-info">
-                            <h3>{{ doctor.full_name }}</h3>
-                            <p class="specialization">{{ doctor.specialization }}</p>
-                            <p class="experience">Стаж: {{ doctor.experience_years }} лет</p>
-                            <p class="bio">{{ doctor.bio|truncatechars:80 }}</p>
-                            <p class="price-tag">
-                                <strong>{{ doctor.price }} ₽</strong> за приём
-                            </p>
-                            {% if user.is_authenticated %}
-                                <a href="{% url 'book_doctor' doctor.id %}" class="btn btn-sm">Записаться</a>
-                            {% else %}
-                                <a href="{% url 'login' %}" class="btn btn-sm">Записаться</a>
-                            {% endif %}
-                        </div>
-                    </div>
+        <!-- Фильтр по специализации -->
+        <div class="filter-container">
+            <label for="specialization-filter">Фильтр по специализации:</label>
+            <select id="specialization-filter" onchange="filterDoctors()">
+                <option value="">Все специализации</option>
+                {% for spec in specializations %}
+                    <option value="{{ spec }}">{{ spec }}</option>
                 {% endfor %}
-            </div>
-            <button class="carousel-arrow right" onclick="scrollDoctors(1)">&#10095;</button>
-            <div class="carousel-dots" id="doctors-dots"></div>
+            </select>
         </div>
-    </section>
+    </div>
 
-    <!-- Блок "КЛИНИКИ" -->
-    <section id="clinics" class="clinics-section">
-        <div class="container">
-            <h2>НАШИ КЛИНИКИ</h2>
-            <p>Современные медицинские центры в удобных локациях.</p>
-        </div>
-
-        <!-- Карусель клиник -->
-        <div class="carousel-container">
-            <button class="carousel-arrow left" onclick="scrollClinics(-1)">&#10094;</button>
-            <div class="carousel-wrapper" id="clinics-wrapper">
-                {% for clinic in clinics %}
-                    <div class="clinic-card">
-                        <div class="clinic-photo">
-                            {% if clinic.photo_url %}
-                                <img src="{{ clinic.photo_url }}" alt="{{ clinic.name }}">
-                            {% else %}
-                                <img src="https://via.placeholder.com/300x200?text=Клиника" alt="Фото клиники">
-                            {% endif %}
-                        </div>
-                        <div class="clinic-info">
-                            <h3>{{ clinic.name }}</h3>
-                            <p class="address">{{ clinic.address|truncatechars:50 }}</p>
-                            <p class="phone">{{ clinic.phone }}</p>
-                            <a href="{% url 'clinic_detail' clinic.id %}" class="btn btn-sm">Подробнее</a>
-                        </div>
+    <!-- Карусель ВНЕ .container -->
+    <div class="carousel-container">
+        <button class="carousel-arrow left" onclick="scrollDoctors(-1)">&#10094;</button>
+        <div class="carousel-wrapper" id="doctors-wrapper">
+            {% for doctor in doctors %}
+                <div class="doctor-card" data-specialization="{{ doctor.specialization }}">
+                    <div class="doctor-photo">
+                        {% if doctor.photo_url %}
+                            <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}">
+                        {% else %}
+                            <img src="https://via.placeholder.com/300x300?text=Врач" alt="Фото врача">
+                        {% endif %}
                     </div>
-                {% endfor %}
-            </div>
-            <button class="carousel-arrow right" onclick="scrollClinics(1)">&#10095;</button>
-            <div class="carousel-dots" id="clinics-dots"></div>
+                    <div class="doctor-info">
+                        <h3>{{ doctor.full_name }}</h3>
+                        <p class="specialization">{{ doctor.specialization }}</p>
+                        <p class="experience">Стаж: {{ doctor.experience_years }} лет</p>
+                        <p class="bio">{{ doctor.bio|truncatechars:80 }}</p>
+                        <p class="price-tag">
+                            <strong>{{ doctor.price }} ₽</strong> за приём
+                        </p>
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'book_doctor' doctor.id %}" class="btn btn-sm">Записаться</a>
+                        {% else %}
+                            <a href="{% url 'login' %}" class="btn btn-sm">Записаться</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-    </section>
+        <button class="carousel-arrow right" onclick="scrollDoctors(1)">&#10095;</button>
+        <div class="carousel-dots" id="doctors-dots"></div>
+    </div>
+</section>
+
+<!-- Блок "КЛИНИКИ" -->
+<section id="clinics" class="clinics-section">
+    <div class="container text-center mb-4">
+        <h2>НАШИ КЛИНИКИ</h2>
+        <p>Современные медицинские центры в удобных локациях.</p>
+    </div>
+
+    <!-- Карусель ВНЕ .container -->
+    <div class="carousel-container">
+        <button class="carousel-arrow left" onclick="scrollClinics(-1)">&#10094;</button>
+        <div class="carousel-wrapper" id="clinics-wrapper">
+            {% for clinic in clinics %}
+                <div class="clinic-card">
+                    <div class="clinic-photo">
+                        {% if clinic.photo_url %}
+                            <img src="{{ clinic.photo_url }}" alt="{{ clinic.name }}">
+                        {% else %}
+                            <img src="https://via.placeholder.com/300x200?text=Клиника" alt="Фото клиники">
+                        {% endif %}
+                    </div>
+                    <div class="clinic-info">
+                        <h3>{{ clinic.name }}</h3>
+                        <p class="address">{{ clinic.address|truncatechars:50 }}</p>
+                        <p class="phone">{{ clinic.phone }}</p>
+                        <a href="{% url 'clinic_detail' clinic.id %}" class="btn btn-sm">Подробнее</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <button class="carousel-arrow right" onclick="scrollClinics(1)">&#10095;</button>
+        <div class="carousel-dots" id="clinics-dots"></div>
+    </div>
+</section>
 {% endblock %}

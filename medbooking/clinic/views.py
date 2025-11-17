@@ -411,29 +411,88 @@ def create_visit_history(request, appointment_id):
             p = canvas.Canvas(buffer, pagesize=A4)
             width, height = A4
 
-            p.setFont(DEFAULT_FONT, 16)
-            p.drawString(50, height - 50, "Медицинское заключение")
-            p.setFont(DEFAULT_FONT, 12)
-            p.drawString(50, height - 80, f"Пациент: {appointment.patient.full_name}")
-            p.drawString(50, height - 100, f"Врач: {appointment.schedule.doctor.full_name}")
-            p.drawString(50, height - 120, f"Дата: {appointment.schedule.date}")
-            p.drawString(50, height - 140, f"Клиника: {appointment.schedule.clinic.name}")
+            # === СТИЛИ ===
+            try:
+                pdfmetrics.registerFont(TTFont('DejaVu', font_path))
+                font_normal = 'DejaVu'
+            except:
+                font_normal = 'Helvetica'
 
-            # Диагноз
-            p.drawString(50, height - 170, "Диагноз:")
-            p.setFont(DEFAULT_FONT, 10)
-            y = height - 190
+            # === ГЕРБОВАЯ РАМКА (имитация) ===
+            p.setStrokeColorRGB(0.8, 0.8, 0.8)
+            p.setLineWidth(0.5)
+            p.rect(20, 20, width - 40, height - 40)
+
+            # === ЛОГОТИП И НАЗВАНИЕ КЛИНИКИ ===
+            p.setFont(font_normal, 14)
+            p.setFillColorRGB(0, 0, 0)
+            p.drawCentredString(width / 2, height - 50, "МЕДИЦИНСКИЙ ЦЕНТР «MEDCLINIC»")
+            p.setFont(font_normal, 10)
+            p.drawCentredString(width / 2, height - 70, "Лицензия № ЛО-77-01-023456 от 15.03.2020")
+            p.drawCentredString(width / 2, height - 85, "г. Москва, ул. Здоровья, д. 15")
+
+            # === ЗАГОЛОВОК ===
+            p.setFont(font_normal, 16)
+            p.drawCentredString(width / 2, height - 120, "МЕДИЦИНСКОЕ ЗАКЛЮЧЕНИЕ")
+
+            # === ИНФОРМАЦИЯ О ПОМЕЩЕНИИ И ПАЦИЕНТЕ ===
+            y = height - 150
+            p.setFont(font_normal, 11)
+            p.drawString(50, y, f"Пациент: {appointment.patient.full_name}")
+            y -= 20
+            p.drawString(50, y, f"Дата рождения: {appointment.patient.birth_date.strftime('%d.%m.%Y')}")
+            y -= 20
+            p.drawString(50, y, f"Врач: {appointment.schedule.doctor.full_name}")
+            y -= 20
+            p.drawString(50, y, f"Специализация: {appointment.schedule.doctor.specialization}")
+            y -= 20
+            p.drawString(50, y, f"Дата приёма: {appointment.schedule.date.strftime('%d.%m.%Y')}")
+            y -= 20
+            p.drawString(50, y, f"Время приёма: {appointment.schedule.time.strftime('%H:%M')}")
+            y -= 20
+            p.drawString(50, y, f"Клиника: {appointment.schedule.clinic.name}")
+            y -= 30
+
+            # === ДИАГНОЗ ===
+            p.setFont(font_normal, 12)
+            p.setFillColorRGB(0, 0, 0)
+            p.drawString(50, y, "Диагноз:")
+            y -= 20
+            p.setFont(font_normal, 11)
             for line in diagnosis.splitlines():
-                p.drawString(50, y, line)
-                y -= 15
+                p.drawString(70, y, line)
+                y -= 16
+            y -= 10
 
-            # Рекомендации
-            p.drawString(50, y - 20, "Рекомендации:")
-            p.setFont(DEFAULT_FONT, 10)
-            y -= 40
+            # === РЕКОМЕНДАЦИИ ===
+            p.setFont(font_normal, 12)
+            p.drawString(50, y, "Рекомендации:")
+            y -= 20
+            p.setFont(font_normal, 11)
             for line in recommendations.splitlines():
-                p.drawString(50, y, line)
-                y -= 15
+                p.drawString(70, y, line)
+                y -= 16
+
+            # === ПОДПИСЬ И ПЕЧАТЬ ===
+            y = 130
+            p.setFont(font_normal, 11)
+            p.drawString(50, y, "Врач: ____________________ / {}/".format(appointment.schedule.doctor.full_name))
+            y -= 25
+            p.drawString(50, y, "Печать медицинского учреждения:")
+            # Имитация печати (круг)
+            p.setStrokeColorRGB(0.7, 0.7, 0.7)
+            p.setFillColorRGB(1, 1, 1)
+            p.circle(400, y - 5, 25, stroke=1, fill=1)
+            p.setFillColorRGB(0.7, 0.7, 0.7)
+            p.setFont(font_normal, 8)
+            p.drawCentredString(400, y - 8, "MEDCLINIC")
+            p.drawCentredString(400, y - 18, "г. Москва")
+
+            # === НИЖНИЙ КОЛОНТИТУЛ ===
+            p.setFont(font_normal, 8)
+            p.setFillColorRGB(0.5, 0.5, 0.5)
+            p.drawString(50, 30, "Документ сформирован автоматически. Подпись и печать проставляются при печати.")
+            p.drawRightString(width - 50, 30, f"ID заключения: {appointment.id}")
 
             p.showPage()
             p.save()
@@ -448,17 +507,17 @@ def create_visit_history(request, appointment_id):
             )
             
             medical_file.file_path.save(
-                f'заключение_{appointment.id}.pdf',
+                f'zaklyuchenie_{appointment.id}.pdf',
                 ContentFile(pdf_file),
                 save=True
             )
 
             appointment.status = AppointmentStatus.COMPLETED
             appointment.save()
-            messages.success(request, "Заключение сохранено и PDF создан.")
+            messages.success(request, "Заключение успешно создано и прикреплено к записи.")
         else:
-            messages.error(request, "Заполните все поля.")
-    
+            messages.error(request, "Пожалуйста, заполните диагноз и рекомендации.")
+
     return redirect('doctor_appointments')
 
 @login_required

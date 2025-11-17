@@ -221,9 +221,9 @@ p { font-size: 1rem; color: #555; }
 .carousel-container {
     position: relative;
     width: 100%;
-    max-width: 900px; /* 3 * 280 + 2 * 28 = 900px */
-    margin: 0 auto;
-    overflow: hidden;
+    max-width: 900px; /* 3 карточки */
+    margin: 0 auto 3rem; /* нижний отступ */
+    overflow: visible; /* ← важно! */
     padding: 1rem 0;
 }
 
