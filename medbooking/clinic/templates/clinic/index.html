@@ -3,6 +3,31 @@
 {% block title %}Главная | MEDCLINIC{% endblock %}
 
 {% block content %}
+  <!-- Приветствие НАД шапкой -->
+    {% if user.is_authenticated and user.role == 'doctor' and user.doctor_profile %}
+    <div class="bg-info text-white py-2 text-center" style="position: relative; z-index: 1000;">
+        <div class="container d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-person-check me-2"></i>Добрый день, доктор {{ user.doctor_profile.full_name }}!</span>
+            <button type="button" class="btn btn-sm btn-light"
+                onclick="this.parentElement.parentElement.style.display='none';">
+                Закрыть
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Приветствие НАД шапкой -->
+    {% if user.is_authenticated and user.role == 'patient' and user.patient_profile  %}
+    <div class="bg-info text-white py-2 text-center" style="position: relative; z-index: 1000;">
+        <div class="container d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-person-check me-2"></i>Добрый день, {{ user.patient_profile.full_name }}!</span>
+            <button type="button" class="btn btn-sm btn-light"
+                onclick="this.parentElement.parentElement.style.display='none';">
+                Закрыть
+            </button>
+        </div>
+    </div>
+    {% endif %}
     <!-- Геро-секция -->
     <section class="hero">
         <div class="container">
@@ -18,9 +43,7 @@
                     <a href="#" class="btn btn-outline">Задать вопрос</a>
                 </div>
             </div>
-            <div class="hero-image">
-                <img src="https://via.placeholder.com/600x400?text=Команда+врачей" alt="Команда врачей">
-            </div>
+            
         </div>
     </section>
 

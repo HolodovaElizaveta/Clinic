@@ -15,6 +15,8 @@ urlpatterns = [
     # Мои записи
     path('my-appointments/', views.my_appointments, name='my_appointments'),          # для пациента
     path('doctor-appointments/', views.doctor_appointments, name='doctor_appointments'),  # для врача
+    path('profile/update/', views.update_profile, name='update_profile'),
+    path('profile/change-password/', views.change_password, name='change_password'),
 
     # Управление записью
     path('appointment/<int:appointment_id>/cancel/', views.cancel_appointment, name='cancel_appointment'),

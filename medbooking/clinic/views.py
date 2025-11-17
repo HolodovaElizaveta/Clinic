@@ -2,6 +2,8 @@
 from django.http import FileResponse
 from django.shortcuts import render, get_object_or_404
 from .models import Doctor, Clinic
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.password_validation import validate_password
 
 # clinic/views.py
 from django.shortcuts import render, redirect
@@ -75,72 +77,96 @@ def login_view(request):
                 messages.error(request, "Аккаунта с такой почтой не существует.")
 
         elif 'register' in request.POST:
-            # Регистрация
+        # Регистрация
             full_name = request.POST.get('full_name').strip()
             email = request.POST.get('email').strip()
             phone = request.POST.get('phone').strip()
-            birth_date = request.POST.get('birth_date')
+            birth_date_str = request.POST.get('birth_date')
             gender = request.POST.get('gender')
             password1 = request.POST.get('password1')
             password2 = request.POST.get('password2')
 
-            # Валидация
             errors = []
 
+            # Обязательные поля
             if not full_name:
                 errors.append("Укажите ФИО.")
             if not email:
                 errors.append("Укажите email.")
             if not phone:
                 errors.append("Укажите номер телефона.")
-            if not birth_date:
+            if not birth_date_str:
                 errors.append("Укажите дату рождения.")
             if not gender:
                 errors.append("Укажите пол.")
+            if not password1 or not password2:
+                errors.append("Пароль и подтверждение пароля обязательны.")
+
+            # Проверка возраста (≥18 лет)
+            if not errors and birth_date_str:
+                try:
+                    from datetime import date
+                    birth_date = date.fromisoformat(birth_date_str)
+                    today = date.today()
+                    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                    if age < 18:
+                        errors.append("Регистрация доступна только лицам старше 18 лет.")
+                except ValueError:
+                    errors.append("Некорректный формат даты рождения.")
+
+            # Проверка паролей
             if password1 != password2:
                 errors.append("Пароли не совпадают.")
-            if len(password1) < 8:
-                errors.append("Пароль должен быть не менее 8 символов.")
+            elif password1:
+                # Проверка длины
+                if len(password1) < 8:
+                    errors.append("Пароль должен содержать не менее 8 символов.")
+                # Проверка на цифру
+                if not any(c.isdigit() for c in password1):
+                    errors.append("Пароль должен содержать хотя бы одну цифру.")
+                # Проверка на заглавную букву
+                if not any(c.isupper() for c in password1):
+                    errors.append("Пароль должен содержать хотя бы одну заглавную букву.")
 
             # Проверка уникальности email и телефона
-            if User.objects.filter(email=email).exists():
-                errors.append("Пользователь с таким email уже зарегистрирован.")
-            if Patient.objects.filter(phone=phone).exists():
-                errors.append("Пользователь с таким номером телефона уже зарегистрирован.")
+            if not errors:
+                if User.objects.filter(email=email).exists():
+                    errors.append("Пользователь с таким email уже зарегистрирован.")
+                if Patient.objects.filter(phone=phone).exists():
+                    errors.append("Пользователь с таким номером телефона уже зарегистрирован.")
 
             if errors:
                 for err in errors:
                     messages.error(request, err)
-                # Вернём данные для автозаполнения (без пароля!)
                 context = {
                     'reg_full_name': full_name,
                     'reg_email': email,
                     'reg_phone': phone,
-                    'reg_birth_date': birth_date,
+                    'reg_birth_date': birth_date_str,
                     'reg_gender': gender,
                     'show_register': True,
                 }
                 return render(request, 'clinic/registration/login.html', context)
 
-            # Создание пользователя
-            try:
-                user = User.objects.create_user(
-                    username=email,  # или сгенерировать уникальный username
-                    email=email,
-                    password=password1,
-                    role='patient'
-                )
-                Patient.objects.create(
-                    user=user,
-                    full_name=full_name,
-                    phone=phone,
-                    birth_date=birth_date,
-                    gender=gender
-                )
-                messages.success(request, "Регистрация прошла успешно! Войдите в систему.")
-                return redirect('login')
-            except Exception as e:
-                messages.error(request, "Ошибка при регистрации. Попробуйте позже.")
+        # Создание пользователя
+        try:
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password1,
+                role='patient'
+            )
+            Patient.objects.create(
+                user=user,
+                full_name=full_name,
+                phone=phone,
+                birth_date=birth_date,
+                gender=gender
+            )
+            messages.success(request, "Регистрация прошла успешно! Войдите в систему.")
+            return redirect('login')
+        except Exception as e:
+            messages.error(request, "Ошибка при регистрации. Попробуйте позже.")
 
     return render(request, 'clinic/registration/login.html')
 
@@ -241,76 +267,88 @@ def create_appointment(request, doctor_id):
     patient = request.user.patient_profile
     clinics = doctor.clinics.all()
 
-    # Получаем все уникальные даты, на которые у врача есть расписание в выбранной клинике
-    available_dates = []
+    # GET-параметры
     selected_clinic = request.GET.get('clinic') or request.POST.get('clinic_id')
+    selected_date_str = request.GET.get('date') or request.POST.get('date')
+
+    # Текущая дата и время (без timezone для простоты, если не используется)
+    from datetime import datetime, date, time
+    now = datetime.now()
+    today = now.date()
+    current_time = now.time()
+
+    available_dates = []
+    times = []
+
+    # Шаг 1: Загрузка доступных дат (только >= сегодня)
     if selected_clinic:
         available_dates = Schedule.objects.filter(
             doctor=doctor,
-            clinic_id=selected_clinic
+            clinic_id=selected_clinic,
+            date__gte=today  # ← Только сегодня и будущие даты
         ).values_list('date', flat=True).distinct().order_by('date')
 
+    # Шаг 2: Загрузка доступных времён (только свободные и не прошедшие)
+    if selected_clinic and selected_date_str:
+        try:
+            selected_date = date.fromisoformat(selected_date_str)
+        except ValueError:
+            selected_date = None
+
+        if selected_date:
+            # Определение минимального времени для сегодняшнего дня
+            min_time = current_time if selected_date == today else time.min
+
+            # Занятые слоты
+            occupied_schedule_ids = Appointment.objects.filter(
+                schedule__doctor=doctor,
+                schedule__clinic_id=selected_clinic,
+                schedule__date=selected_date
+            ).values_list('schedule_id', flat=True)
+
+            # Свободные и актуальные слоты
+            times = Schedule.objects.filter(
+                doctor=doctor,
+                clinic_id=selected_clinic,
+                date=selected_date,
+                time__gt=min_time  # ← Только будущие времена (строго больше)
+            ).exclude(id__in=occupied_schedule_ids).order_by('time')
+
+    # POST-обработка
     if request.method == 'POST':
         clinic_id = request.POST.get('clinic_id')
-        date = request.POST.get('date')
-        time = request.POST.get('time')
+        date_str = request.POST.get('date')
+        time_str = request.POST.get('time')
 
-        if not all([clinic_id, date, time]):
+        if not all([clinic_id, date_str, time_str]):
             messages.error(request, "Заполните все поля.")
-            return render(request, 'clinic/appointments/create_appointment.html', {
-                'doctor': doctor,
-                'clinics': clinics,
-                'selected_clinic': clinic_id,
-                'available_dates': available_dates,
-                'selected_date': date,
-                'times': [],
-            })
-
-        try:
-            schedule = Schedule.objects.get(
-                doctor=doctor,
-                clinic_id=clinic_id,
-                date=date,
-                time=time
-            )
-        except Schedule.DoesNotExist:
-            messages.error(request, "Выбранное время недоступно.")
-            return redirect('create_appointment', doctor_id=doctor_id)
-
-        if Appointment.objects.filter(schedule=schedule).exists():
-            messages.error(request, "Это время уже занято.")
-            return redirect('create_appointment', doctor_id=doctor_id)
-
-        Appointment.objects.create(
-            patient=patient,
-            schedule=schedule,
-            status=AppointmentStatus.PLANNED
-        )
-        messages.success(request, "Вы успешно записаны на приём!")
-        return redirect('my_appointments')
-
-    # GET-запрос
-    selected_date = request.GET.get('date')
-    times = []
-    if selected_clinic and selected_date:
-        occupied_schedules = Appointment.objects.filter(
-            schedule__doctor=doctor,
-            schedule__clinic_id=selected_clinic,
-            schedule__date=selected_date
-        ).values_list('schedule_id', flat=True)
-
-        times = Schedule.objects.filter(
-            doctor=doctor,
-            clinic_id=selected_clinic,
-            date=selected_date
-        ).exclude(id__in=occupied_schedules).order_by('time')
+        else:
+            try:
+                schedule = Schedule.objects.get(
+                    doctor=doctor,
+                    clinic_id=clinic_id,
+                    date=date_str,
+                    time=time_str
+                )
+                if Appointment.objects.filter(schedule=schedule).exists():
+                    messages.error(request, "Это время уже занято.")
+                else:
+                    Appointment.objects.create(
+                        patient=patient,
+                        schedule=schedule,
+                        status=AppointmentStatus.PLANNED
+                    )
+                    messages.success(request, "Вы успешно записаны на приём!")
+                    return redirect('my_appointments')
+            except Schedule.DoesNotExist:
+                messages.error(request, "Выбранное время недоступно.")
 
     return render(request, 'clinic/appointments/create_appointment.html', {
         'doctor': doctor,
         'clinics': clinics,
         'selected_clinic': selected_clinic,
         'available_dates': available_dates,
-        'selected_date': selected_date,
+        'selected_date': selected_date_str,
         'times': times,
     })
 
@@ -628,3 +666,103 @@ def send_appointment_reminders():
                 print(f"Напоминание отправлено: {appt.patient.user.email}")
             except Exception as e:
                 print(f"Ошибка отправки напоминания для {appt.id}: {e}")
+
+
+@login_required
+def update_profile(request):
+    """Редактирование профиля пациента (без email и пароля)"""
+    if request.user.role != 'patient':
+        return redirect('main')
+    
+    if request.method == 'POST':
+        patient = request.user.patient_profile
+        user = request.user
+
+        full_name = request.POST.get('full_name').strip()
+        phone = request.POST.get('phone').strip()
+        birth_date_str = request.POST.get('birth_date')
+        gender = request.POST.get('gender')
+
+        errors = []
+
+        if not full_name:
+            errors.append("Укажите ФИО.")
+        if not phone:
+            errors.append("Укажите номер телефона.")
+        if not birth_date_str:
+            errors.append("Укажите дату рождения.")
+        if not gender:
+            errors.append("Укажите пол.")
+
+        # Проверка возраста ≥18
+        if birth_date_str:
+            try:
+                from datetime import date
+                birth_date = date.fromisoformat(birth_date_str)
+                today = date.today()
+                age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                if age < 18:
+                    errors.append("Возраст должен быть 18 лет или старше.")
+            except ValueError:
+                errors.append("Некорректный формат даты рождения.")
+
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+        else:
+            # Обновление данных (email НЕ обновляется)
+            patient.full_name = full_name
+            patient.phone = phone
+            patient.birth_date = birth_date_str
+            patient.gender = gender
+            patient.save()
+            messages.success(request, "Данные профиля успешно обновлены!")
+    
+    return redirect('my_appointments')
+
+
+@login_required
+def change_password(request):
+    """Смена пароля с проверкой текущего"""
+    if request.user.role != 'patient':
+        return redirect('main')
+    
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password')
+        new_password1 = request.POST.get('new_password1')
+        new_password2 = request.POST.get('new_password2')
+
+        errors = []
+
+        # Проверка текущего пароля
+        if not check_password(current_password, request.user.password):
+            errors.append("Текущий пароль введён неверно.")
+
+        # Проверка совпадения
+        if new_password1 != new_password2:
+            errors.append("Новые пароли не совпадают.")
+
+        # Проверка длины
+        if len(new_password1) < 8:
+            errors.append("Пароль должен содержать не менее 8 символов.")
+
+        # Проверка на цифру
+        if not any(c.isdigit() for c in new_password1):
+            errors.append("Пароль должен содержать хотя бы одну цифру.")
+
+        # Проверка на заглавную букву
+        if not any(c.isupper() for c in new_password1):
+            errors.append("Пароль должен содержать хотя бы одну заглавную букву.")
+
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+        else:
+            request.user.set_password(new_password1)
+            request.user.save()
+            # Обновляем сессию, чтобы не разлогинить
+            from django.contrib.auth import update_session_auth_hash
+            update_session_auth_hash(request, request.user)
+            messages.success(request, "Пароль успешно изменён!")
+    
+    return redirect('my_appointments')

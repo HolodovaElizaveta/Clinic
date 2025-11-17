@@ -1,143 +1,153 @@
 <!-- clinic/templates/clinic/base.html -->
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Медицинский центр{% endblock %}</title>
     {% load static %}
-    <!-- Bootstrap CSS -->
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.min.css">
-    <!-- Ваши стили -->
+
     <link rel="stylesheet" href="{% static 'clinic/css/style.css' %}">
 </head>
+
 <body class="d-flex flex-column min-vh-100">
 
-   <!-- Шапка сайта -->
-<header class="bg-white shadow-sm border-bottom border-light">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center py-2">
-            <!-- Логотип -->
-            <a href="{% url 'main' %}" class="text-decoration-none d-flex align-items-center">
-                <i class="bi bi-heart-pulse text-primary fs-3"></i>
-                <span class="fw-bold fs-4 text-primary ms-2">MEDCLINIC</span>
-            </a>
 
-            <!-- Навигация (только на md+) -->
-            <nav class="nav d-none d-md-flex gap-3">
-                <a href="#doctors" class="nav-link text-dark px-3 py-2 rounded">Наши врачи</a>
-                <a href="#clinics" class="nav-link text-dark px-3 py-2 rounded">Клиники</a>
-                <a href="#" class="nav-link text-dark px-3 py-2 rounded">Услуги</a>
-                <a href="#" class="nav-link text-dark px-3 py-2 rounded">Контакты</a>
-            </nav>
+    <header class="bg-white shadow-sm border-bottom border-light">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center py-2">
 
-            <!-- Кнопки авторизации и уведомления -->
-            {% if user.is_authenticated %}
+                <a href="{% url 'main' %}" class="text-decoration-none d-flex align-items-center">
+                    <i class="bi bi-heart-pulse text-primary fs-3"></i>
+                    <span class="fw-bold fs-4 text-primary ms-2">MEDCLINIC</span>
+                </a>
+
+
+                <nav class="nav d-none d-md-flex gap-3">
+                    <a href="#doctors" class="nav-link text-dark px-3 py-2 rounded">Наши врачи</a>
+                    <a href="#clinics" class="nav-link text-dark px-3 py-2 rounded">Клиники</a>
+                    <a href="#" class="nav-link text-dark px-3 py-2 rounded">Услуги</a>
+                    <a href="#" class="nav-link text-dark px-3 py-2 rounded">Контакты</a>
+                </nav>
+
+                <!-- Кнопки авторизации и уведомления -->
+                {% if user.is_authenticated %}
                 <div class="auth-buttons d-flex align-items-center gap-2">
                     {% if user.role == 'patient' and user.patient_profile %}
-                        
-                        <a href="{% url 'my_appointments' %}" class="btn btn-outline-primary btn-sm px-3">
-                            <i class="bi bi-calendar-check me-1"></i> Мои записи
-                        </a>
-                        <!-- Уведомления пациента -->
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
-                                    id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-bell"></i>
-                                {% if upcoming_appointments %}
-                                    <span class="badge bg-danger rounded-pill">{{ upcoming_appointments|length }}</span>
-                                {% endif %}
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown"
-                                style="width: 300px; max-height: 400px; overflow-y: auto;">
-                                <li><h6 class="dropdown-header">Уведомления</h6></li>
-                                {% if upcoming_appointments %}
-                                    {% for appt in upcoming_appointments %}
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-start gap-2"
-                                               href="{% url 'my_appointments' %}">
-                                                <i class="bi bi-clock text-primary mt-1"></i>
-                                                <div>
-                                                    <strong>{{ appt.schedule.doctor.full_name }}</strong><br>
-                                                    <small class="text-muted">
-                                                        {{ appt.schedule.date }} в {{ appt.schedule.time }}
-                                                    </small>
-                                                </div>
-                                            </a>
-                                        </li>
-                                    {% endfor %}
-                                {% else %}
-                                    <li>
-                                        <span class="dropdown-item-text text-center text-muted">
-                                            Нет ближайших приёмов
-                                        </span>
-                                    </li>
-                                {% endif %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'my_appointments' %}">Все записи</a>
-                                </li>
-                            </ul>
-                        </div>
+
+                    <a href="{% url 'my_appointments' %}" class="btn btn-outline-primary btn-sm px-3">
+                        <i class="bi bi-calendar-check me-1"></i> Мой профиль
+                    </a>
+
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                            id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell"></i>
+                            {% if upcoming_appointments %}
+                            <span class="badge bg-danger rounded-pill">{{ upcoming_appointments|length }}</span>
+                            {% endif %}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown"
+                            style="width: 300px; max-height: 400px; overflow-y: auto;">
+                            <li>
+                                <h6 class="dropdown-header">Уведомления</h6>
+                            </li>
+                            {% if upcoming_appointments %}
+                            {% for appt in upcoming_appointments %}
+                            <li>
+                                <a class="dropdown-item d-flex align-items-start gap-2"
+                                    href="{% url 'my_appointments' %}">
+                                    <i class="bi bi-clock text-primary mt-1"></i>
+                                    <div>
+                                        <strong>{{ appt.schedule.doctor.full_name }}</strong><br>
+                                        <small class="text-muted">
+                                            {{ appt.schedule.date }} в {{ appt.schedule.time }}
+                                        </small>
+                                    </div>
+                                </a>
+                            </li>
+                            {% endfor %}
+                            {% else %}
+                            <li>
+                                <span class="dropdown-item-text text-center text-muted">
+                                    Нет ближайших приёмов
+                                </span>
+                            </li>
+                            {% endif %}
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'my_appointments' %}">Все записи</a>
+                            </li>
+                        </ul>
+                    </div>
 
                     {% elif user.role == 'doctor' and user.doctor_profile %}
-                        
-                        <a href="{% url 'doctor_appointments' %}" class="btn btn-outline-primary btn-sm px-3">
-                            <i class="bi bi-calendar-event me-1"></i> Мои приёмы
-                        </a>
-                        <!-- Уведомления врача -->
-                        <div class="dropdown">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
-                                    id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-bell"></i>
-                                {% if upcoming_appointments_doctor %}
-                                    <span class="badge bg-danger rounded-pill">{{ upcoming_appointments_doctor|length }}</span>
-                                {% endif %}
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown"
-                                style="width: 300px; max-height: 400px; overflow-y: auto;">
-                                <li><h6 class="dropdown-header">Уведомления</h6></li>
-                                {% if upcoming_appointments_doctor %}
-                                    {% for appt in upcoming_appointments_doctor %}
-                                        <li>
-                                            <a class="dropdown-item d-flex align-items-start gap-2"
-                                               href="{% url 'doctor_appointments' %}">
-                                                <i class="bi bi-clock text-primary mt-1"></i>
-                                                <div>
-                                                    <strong>{{ appt.patient.full_name }}</strong><br>
-                                                    <small class="text-muted">
-                                                        {{ appt.schedule.date }} в {{ appt.schedule.time }}
-                                                    </small>
-                                                </div>
-                                            </a>
-                                        </li>
-                                    {% endfor %}
-                                {% else %}
-                                    <li>
-                                        <span class="dropdown-item-text text-center text-muted">
-                                            Нет ближайших приёмов
-                                        </span>
-                                    </li>
-                                {% endif %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'doctor_appointments' %}">Все приёмы</a>
-                                </li>
-                            </ul>
-                        </div>
+
+                    <a href="{% url 'doctor_appointments' %}" class="btn btn-outline-primary btn-sm px-3">
+                        <i class="bi bi-calendar-event me-1"></i> Мои приёмы
+                    </a>
+
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                            id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell"></i>
+                            {% if upcoming_appointments_doctor %}
+                            <span class="badge bg-danger rounded-pill">{{ upcoming_appointments_doctor|length }}</span>
+                            {% endif %}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationsDropdown"
+                            style="width: 300px; max-height: 400px; overflow-y: auto;">
+                            <li>
+                                <h6 class="dropdown-header">Уведомления</h6>
+                            </li>
+                            {% if upcoming_appointments_doctor %}
+                            {% for appt in upcoming_appointments_doctor %}
+                            <li>
+                                <a class="dropdown-item d-flex align-items-start gap-2"
+                                    href="{% url 'doctor_appointments' %}">
+                                    <i class="bi bi-clock text-primary mt-1"></i>
+                                    <div>
+                                        <strong>{{ appt.patient.full_name }}</strong><br>
+                                        <small class="text-muted">
+                                            {{ appt.schedule.date }} в {{ appt.schedule.time }}
+                                        </small>
+                                    </div>
+                                </a>
+                            </li>
+                            {% endfor %}
+                            {% else %}
+                            <li>
+                                <span class="dropdown-item-text text-center text-muted">
+                                    Нет ближайших приёмов
+                                </span>
+                            </li>
+                            {% endif %}
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'doctor_appointments' %}">Все приёмы</a>
+                            </li>
+                        </ul>
+                    </div>
 
                     {% elif user.role == 'admin' %}
-                        <span class="welcome text-muted d-none d-md-inline">
-                            Привет, администратор {{ user.username }}!
-                        </span>
-                        <a href="{% url 'admin_appointments' %}" class="btn btn-outline-primary btn-sm px-3">
-                            <i class="bi bi-calendar-check me-1"></i> Управление
-                        </a>
-                        <a href="{% url 'admin:index' %}" class="btn btn-outline-danger btn-sm ms-1 px-3">
-                            <i class="bi bi-shield-lock me-1"></i> Admin
-                        </a>
+                    <span class="welcome text-muted d-none d-md-inline">
+                        Добрый день, администратор {{ user.username }}!
+                    </span>
+                    <a href="{% url 'admin_appointments' %}" class="btn btn-outline-primary btn-sm px-3">
+                        <i class="bi bi-calendar-check me-1"></i> Управление
+                    </a>
+                    <a href="{% url 'admin:index' %}" class="btn btn-outline-danger btn-sm ms-1 px-3">
+                        <i class="bi bi-shield-lock me-1"></i> Admin
+                    </a>
                     {% endif %}
 
                     <!-- Кнопка выхода -->
@@ -148,28 +158,18 @@
                         </button>
                     </form>
                 </div>
-            {% else %}
+                {% else %}
                 <div class="auth-buttons">
                     <a href="{% url 'login' %}" class="btn btn-primary btn-sm px-3">
                         <i class="bi bi-box-arrow-in-right me-1"></i> Вход / Регистрация
                     </a>
                 </div>
-            {% endif %}
+                {% endif %}
+            </div>
         </div>
-    </div>
-</header>
+    </header>
 
-<!-- Приветствие НАД шапкой -->
-{% if user.is_authenticated and user.role == 'doctor' and user.doctor_profile %}
-    <div class="bg-info text-white py-2 text-center" style="position: relative; z-index: 1000;">
-        <div class="container d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-person-check me-2"></i>Привет, доктор {{ user.doctor_profile.full_name }}!</span>
-            <button type="button" class="btn btn-sm btn-light" onclick="this.parentElement.parentElement.style.display='none';">
-                Закрыть
-            </button>
-        </div>
-    </div>
-{% endif %}
+  
 
     <!-- Основное содержимое -->
     <main class="flex-grow-1">
@@ -183,7 +183,7 @@
                 <div class="col-md-4 text-center text-md-start">
                     <h5 class="mb-3"><i class="bi bi-qr-code me-2"></i>Свяжитесь с нами</h5>
                     <img src="https://via.placeholder.com/150?text=QR+Code" alt="QR Code"
-                         class="img-fluid mb-3 rounded border border-light" style="max-width: 150px;">
+                        class="img-fluid mb-3 rounded border border-light" style="max-width: 150px;">
                     <p class="small">Сканируйте QR-код для быстрого доступа к нашему приложению.</p>
                     <div class="d-flex flex-wrap justify-content-center justify-content-md-start gap-2">
                         <a href="tel:+78005553535" class="btn btn-outline-light btn-sm">
@@ -198,9 +198,12 @@
                     <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>О нас</h5>
                     <p class="small mb-3">MEDCLINIC — ваш надёжный партнёр в заботе о здоровье.</p>
                     <ul class="list-unstyled small">
-                        <li class="mb-2"><a href="#" class="text-decoration-none text-light"><i class="bi bi-info-circle me-2"></i> О компании</a></li>
-                        <li class="mb-2"><a href="#" class="text-decoration-none text-light"><i class="bi bi-newspaper me-2"></i> Новости</a></li>
-                        <li><a href="#" class="text-decoration-none text-light"><i class="bi bi-question-circle me-2"></i> Частые вопросы</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none text-light"><i
+                                    class="bi bi-info-circle me-2"></i> О компании</a></li>
+                        <li class="mb-2"><a href="#" class="text-decoration-none text-light"><i
+                                    class="bi bi-newspaper me-2"></i> Новости</a></li>
+                        <li><a href="#" class="text-decoration-none text-light"><i
+                                    class="bi bi-question-circle me-2"></i> Частые вопросы</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
@@ -229,4 +232,5 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{% static 'clinic/js/main.js' %}"></script>
 </body>
+
 </html>

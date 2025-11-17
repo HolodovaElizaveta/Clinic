@@ -3,19 +3,23 @@
 {% block title %}{{ doctor.full_name }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="doctor-page-layout">
-        <!-- Левая колонка — фото -->
-        <div class="doctor-photo-column">
-            {% if doctor.photo_url %}
-                <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}" class="doctor-photo-large">
-            {% else %}
-                <img src="https://via.placeholder.com/400x400?text=Врач" alt="Фото врача" class="doctor-photo-large">
-            {% endif %}
-            <div class="doctor-role">
-                {{ doctor.specialization }}, Заведующий отделением-врач-косметолог
+<div class="container py-4">
+    <div class="row g-4">
+        <!-- Левая колонка — фото и роль -->
+        <div class="col-md-4">
+            <div class="doctor-photo-wrapper text-center mb-4">
+                {% if doctor.photo_url %}
+                    <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}" class="doctor-photo-large img-fluid rounded">
+                {% else %}
+                    <img src="https://via.placeholder.com/400x400?text=Врач" alt="Фото врача" class="doctor-photo-large img-fluid rounded">
+                {% endif %}
             </div>
-            <div class="patient-type">
+
+            <div class="doctor-role mb-3">
+                <strong>Врач-косметолог</strong>, Заведующий отделением-врач-косметолог
+            </div>
+
+            <div class="patient-type d-flex align-items-center gap-2 mb-3">
                 <svg width="24" height="24" fill="currentColor">
                     <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c1.66 0 5.33 0 6 0v6H6v-6c.67 0 4.34 0 6 0zm-6 2a1 1 0 112 0 1 1 0 01-2 0zm8 0a1 1 0 112 0 1 1 0 01-2 0z"/>
                 </svg>
@@ -24,15 +28,15 @@
         </div>
 
         <!-- Центральная колонка — информация -->
-        <div class="doctor-info-column">
-            <h1>{{ doctor.full_name }}</h1>
-            <h2>Информация о специалисте</h2>
+        <div class="col-md-5">
+            <h1 class="display-5 fw-bold mb-3">{{ doctor.full_name }}</h1>
+            <h2 class="h4 fw-bold mb-4">Информация о специалисте</h2>
 
-            <div class="info-row">
+            <div class="info-row mb-3">
                 <strong>Стаж работы:</strong> {{ doctor.experience_years }} лет.
             </div>
 
-            <div class="info-row">
+            <div class="info-row mb-3">
                 <strong>Клиника:</strong>
                 {% for clinic in doctor.clinics.all %}
                     <a href="{% url 'clinic_detail' clinic.id %}" style="color: #007bff; text-decoration: underline;">
@@ -43,9 +47,9 @@
                 {% endfor %}
             </div>
 
-            <div class="info-row">
+            <div class="info-row mb-3">
                 <strong>Специализация:</strong>
-                <ul class="specializations-list">
+                <ul class="specializations-list mt-2">
                     {% if doctor.bio %}
                         {{ doctor.bio|linebreaksbr|safe }}
                     {% else %}
@@ -53,28 +57,174 @@
                     {% endif %}
                 </ul>
             </div>
-
-            <div class="info-row">
-          
-            </div>
         </div>
 
         <!-- Правая колонка — цена и запись -->
-        <div class="doctor-action-column">
-            <div class="price-card">
-                <div class="price-header">Стоимость:</div>
-                <div class="price-value">{{ doctor.price }} ₽</div>
+        <div class="col-md-3">
+            <div class="price-card p-4 bg-white border rounded shadow-sm">
+                <div class="price-header fw-bold mb-2">Стоимость:</div>
+                <div class="price-value display-5 fw-bold text-primary mb-3">{{ doctor.price }} ₽</div>
                 {% if user.is_authenticated and user.role == 'patient' %}
-                    <a href="{% url 'create_appointment' doctor.id %}" class="btn btn-primary">Записаться на приём</a>
+                    <a href="{% url 'create_appointment' doctor.id %}" class="btn btn-primary w-100">Записаться на приём</a>
                 {% elif not user.is_authenticated %}
-                    <a href="{% url 'login' %}" class="btn btn-primary">Записаться на приём</a>
+                    <a href="{% url 'login' %}" class="btn btn-primary w-100">Записаться на приём</a>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <div style="margin-top: 2rem; text-align: center;">
-        <a href="{% url 'main' %}" class="btn btn-outline">← Вернуться на главную</a>
+    <div class="text-center mt-5">
+        <a href="{% url 'main' %}" class="btn btn-outline-primary px-4">
+            ← Вернуться на главную
+        </a>
     </div>
 </div>
+
+<style>
+.doctor-page-layout {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.doctor-photo-column {
+    flex: 0 0 30%;
+}
+
+.doctor-info-column {
+    flex: 0 0 50%;
+}
+
+.doctor-action-column {
+    flex: 0 0 20%;
+}
+
+.doctor-photo-large {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.doctor-role {
+    font-size: 0.9rem;
+    color: #555;
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.patient-type {
+    font-size: 0.9rem;
+    color: #555;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.info-row {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.info-row strong {
+    font-weight: 600;
+    color: #333;
+}
+
+.specializations-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.specializations-list li {
+    margin-bottom: 0.5rem;
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.specializations-list li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.price-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.price-header {
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.price-value {
+    font-size: 2rem;
+    color: #007bff;
+    font-weight: 700;
+    margin: 0.5rem 0;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #0062cc;
+    border-color: #0062cc;
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    border-color: #007bff;
+    color: #007bff;
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .doctor-page-layout {
+        flex-direction: column;
+    }
+
+    .doctor-photo-column,
+    .doctor-info-column,
+    .doctor-action-column {
+        flex: 0 0 100%;
+    }
+
+    .price-card {
+        margin-top: 1.5rem;
+    }
+}
+</style>
+
 {% endblock %}
