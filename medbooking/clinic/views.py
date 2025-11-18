@@ -4,6 +4,9 @@ from django.shortcuts import render, get_object_or_404
 from .models import Doctor, Clinic
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import validate_password
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
+
 
 # clinic/views.py
 from django.shortcuts import render, redirect
@@ -60,21 +63,35 @@ from .models import User, Patient, Gender
 def login_view(request):
     if request.method == 'POST':
         if 'login' in request.POST:
-            # Вход
+            # === Ограничение по IP ===
+            ip = request.META.get('REMOTE_ADDR')
+            cache_key = f"login_attempts_{ip}"
+            attempts = cache.get(cache_key, 0)
+
+            if attempts >= 5:  # максимум 5 попыток
+                messages.error(request, "Слишком много неудачных попыток входа. Повторите через 15 минут.")
+                return render(request, 'clinic/registration/login.html')
+
+            # === Обычная аутентификация ===
             email = request.POST.get('email')
             password = request.POST.get('password')
-           
+            
             try:
                 user = User.objects.get(email=email)
-                print(f"Попытка входа: email={email}, username={user.username}, password = {user.password}")
                 auth_user = authenticate(request, username=email, password=password)
                 if auth_user:
+                    # Успешный вход — сброс счётчика
+                    cache.delete(cache_key)
                     login(request, auth_user)
                     return redirect('main')
                 else:
-                    messages.error(request, "Неверный пароль.")
+                    # Неудачная попытка — увеличить счётчик
+                    cache.set(cache_key, attempts + 1, timeout=900)  # 900 сек = 15 минут
+                    messages.error(request, "Неверный email или пароль.")
             except User.DoesNotExist:
-                messages.error(request, "Аккаунта с такой почтой не существует.")
+                # Неудачная попытка — увеличить счётчик
+                cache.set(cache_key, attempts + 1, timeout=900)
+                messages.error(request, "Неверный email или пароль.")
 
         elif 'register' in request.POST:
         # Регистрация
