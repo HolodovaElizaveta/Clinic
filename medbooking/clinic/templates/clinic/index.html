@@ -3,140 +3,138 @@
 {% block title %}Главная | MEDCLINIC{% endblock %}
 
 {% block content %}
-  <!-- Приветствие НАД шапкой -->
-  {% if user.is_authenticated and user.role == 'doctor' and user.doctor_profile %}
-  <div class="bg-info text-white py-2 text-center" style="position: relative; z-index: 1000;">
-      <div class="container d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-person-check me-2"></i>Добрый день, доктор {{ user.doctor_profile.full_name }}!</span>
-          <button type="button" class="btn btn-sm btn-light"
-              onclick="this.parentElement.parentElement.style.display='none';">
-              Закрыть
-          </button>
-      </div>
-  </div>
-  {% endif %}
+<!-- Приветствие НАД шапкой -->
+{% if user.is_authenticated and user.role == 'doctor' and user.doctor_profile %}
+<div class="bg-info text-white py-2 text-center" style="position: relative; z-index: 1000;">
+    <div class="container d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-check me-2"></i>Добрый день, доктор {{ user.doctor_profile.full_name }}!</span>
+        <button type="button" class="btn btn-sm btn-light"
+            onclick="this.parentElement.parentElement.style.display='none';">
+            Закрыть
+        </button>
+    </div>
+</div>
+{% endif %}
 
-  {% if user.is_authenticated and user.role == 'patient' and user.patient_profile %}
-  <div class="bg-info text-white py-2 text-center" style="position: relative; z-index: 1000;">
-      <div class="container d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-person-check me-2"></i>Добрый день, {{ user.patient_profile.full_name }}!</span>
-          <button type="button" class="btn btn-sm btn-light"
-              onclick="this.parentElement.parentElement.style.display='none';">
-              Закрыть
-          </button>
-      </div>
-  </div>
-  {% endif %}
+{% if user.is_authenticated and user.role == 'patient' and user.patient_profile %}
+<div class="bg-info text-white py-2 text-center" style="position: relative; z-index: 1000;">
+    <div class="container d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-check me-2"></i>Добрый день, {{ user.patient_profile.full_name }}!</span>
+        <button type="button" class="btn btn-sm btn-light"
+            onclick="this.parentElement.parentElement.style.display='none';">
+            Закрыть
+        </button>
+    </div>
+</div>
+{% endif %}
 
-  <!-- Геро-секция -->
-  <section class="hero">
-      <div class="container">
-          <div class="hero-content">
-              <h1 class="display-4 fw-bold">МЫ ЗАБОТИМСЯ О ВАШЕМ ЗДОРОВЬЕ ❤️</h1>
-              <div class="hero-buttons">
-                  {% if user.is_authenticated %}
-                      <a href="{% url 'book' %}" class="btn btn-primary btn-lg px-4">Записаться на приём</a>
-                  {% else %}
-                      <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4">Записаться на приём</a>
-                  {% endif %}
-                  <a href="#" class="btn btn-outline-light btn-lg px-4">Задать вопрос</a>
-              </div>
-          </div>
-          <div class="hero-image">
-              <img src="https://via.placeholder.com/600x400?text=Команда+врачей" alt="Команда врачей">
-          </div>
-      </div>
-  </section>
+<!-- Геро-секция -->
+<section class="hero">
+    <div class="container">
+        <div class="hero-content">
+            <h1 class="display-4 fw-bold">МЫ ЗАБОТИМСЯ О ВАШЕМ ЗДОРОВЬЕ ❤️</h1>
+            <div class="hero-buttons">
+                {% if user.is_authenticated %}
+                <a href="{% url 'book' %}" class="btn btn-primary btn-lg px-4">Записаться на приём</a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4">Записаться на приём</a>
+                {% endif %}
+                <a href="#" class="btn btn-outline-light btn-lg px-4">Задать вопрос</a>
+            </div>
+        </div>
+    </div>
+</section>
 
-  <!-- Блок "НАШИ ВРАЧИ" -->
-  <section id="doctors" class="doctors-section">
-      <div class="container text-center mb-5">
-          <h2 class="fw-bold mb-2">НАШИ ВРАЧИ</h2>
-          <p class="text-muted mb-4">Квалифицированные специалисты, готовые оказать помощь каждому пациенту.</p>
+<!-- Блок "НАШИ ВРАЧИ" -->
+<section id="doctors" class="doctors-section">
+    <div class="container text-center mb-5">
+        <h2 class="fw-bold mb-2">НАШИ ВРАЧИ</h2>
+        <p class="text-muted mb-4">Квалифицированные специалисты, готовые оказать помощь каждому пациенту.</p>
 
-          <!-- Фильтр по специализации -->
-          <div class="filter-container">
-              <label for="specialization-filter" class="form-label fw-bold">Фильтр по специализации:</label>
-              <select id="specialization-filter" class="form-select" style="max-width: 300px; margin: 0 auto;" onchange="filterDoctors()">
-                  <option value="">Все специализации</option>
-                  {% for spec in specializations %}
-                      <option value="{{ spec }}">{{ spec }}</option>
-                  {% endfor %}
-              </select>
-          </div>
-      </div>
+        <!-- Фильтр по специализации -->
+        <div class="filter-container">
+            <label for="specialization-filter" class="form-label fw-bold">Фильтр по специализации:</label>
+            <select id="specialization-filter" class="form-select" style="max-width: 300px; margin: 0 auto;"
+                onchange="filterDoctors()">
+                <option value="">Все специализации</option>
+                {% for spec in specializations %}
+                <option value="{{ spec }}">{{ spec }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
 
-      <!-- Карусель ВНЕ .container -->
-      <div class="carousel-container">
-          <button class="carousel-arrow left" onclick="scrollDoctors(-1)" aria-label="Предыдущий врач">
-              <i class="bi bi-chevron-left"></i>
-          </button>
-          <div class="carousel-wrapper" id="doctors-wrapper">
-              {% for doctor in doctors %}
-                  <div class="doctor-card" data-specialization="{{ doctor.specialization }}">
-                      <div class="doctor-photo">
-                          {% if doctor.photo_url %}
-                              <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}">
-                          {% else %}
-                              <img src="https://via.placeholder.com/300x300?text=Врач" alt="Фото врача">
-                          {% endif %}
-                      </div>
-                      <div class="doctor-info">
-                          <h3 class="h5">{{ doctor.full_name }}</h3>
-                          <p class="specialization text-primary">{{ doctor.specialization }}</p>
-                          <p class="experience text-muted">Стаж: {{ doctor.experience_years }} лет</p>
-                          <p class="bio text-muted">{{ doctor.bio|truncatechars:80 }}</p>
-                          <p class="price-tag">
-                              <strong>{{ doctor.price }} ₽</strong> за приём
-                          </p>
-                          {% if user.is_authenticated %}
-                              <a href="{% url 'book_doctor' doctor.id %}" class="btn btn-primary btn-sm">Записаться</a>
-                          {% else %}
-                              <a href="{% url 'login' %}" class="btn btn-primary btn-sm">Записаться</a>
-                          {% endif %}
-                      </div>
-                  </div>
-              {% endfor %}
-          </div>
-          <button class="carousel-arrow right" onclick="scrollDoctors(1)" aria-label="Следующий врач">
-              <i class="bi bi-chevron-right"></i>
-          </button>
-      </div>
-  </section>
+    <!-- Карусель ВНЕ .container -->
+    <div class="carousel-container">
+        <button class="carousel-arrow left" onclick="scrollDoctors(-1)" aria-label="Предыдущий врач">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <div class="carousel-wrapper" id="doctors-wrapper">
+            {% for doctor in doctors %}
+            <div class="doctor-card" data-specialization="{{ doctor.specialization }}">
+                <div class="doctor-photo">
+                    {% if doctor.photo_url %}
+                    <img src="{{ doctor.photo_url }}" alt="{{ doctor.full_name }}">
+                    {% else %}
+                    <img src="https://via.placeholder.com/300x300?text=Врач" alt="Фото врача">
+                    {% endif %}
+                </div>
+                <div class="doctor-info">
+                    <h3 class="h5">{{ doctor.full_name }}</h3>
+                    <p class="specialization text-primary">{{ doctor.specialization }}</p>
+                    <p class="experience text-muted">Стаж: {{ doctor.experience_years }} лет</p>
+                    <p class="bio text-muted">{{ doctor.bio|truncatechars:80 }}</p>
+                    <p class="price-tag">
+                        <strong>{{ doctor.price }} ₽</strong> за приём
+                    </p>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'book_doctor' doctor.id %}" class="btn btn-primary btn-sm">Записаться</a>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-sm">Записаться</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="carousel-arrow right" onclick="scrollDoctors(1)" aria-label="Следующий врач">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    </div>
+</section>
 
-  <!-- Блок "КЛИНИКИ" -->
-  <section id="clinics" class="clinics-section">
-      <div class="container text-center mb-5">
-          <h2 class="fw-bold mb-2">НАШИ КЛИНИКИ</h2>
-          <p class="text-muted">Современные медицинские центры в удобных локациях.</p>
-      </div>
+<!-- Блок "КЛИНИКИ" -->
+<section id="clinics" class="clinics-section">
+    <div class="container text-center mb-5">
+        <h2 class="fw-bold mb-2">НАШИ КЛИНИКИ</h2>
+        <p class="text-muted">Современные медицинские центры в удобных локациях.</p>
+    </div>
 
-      <div class="carousel-container">
-          <button class="carousel-arrow left" onclick="scrollClinics(-1)" aria-label="Предыдущая клиника">
-              <i class="bi bi-chevron-left"></i>
-          </button>
-          <div class="carousel-wrapper" id="clinics-wrapper">
-              {% for clinic in clinics %}
-                  <div class="clinic-card">
-                      <div class="clinic-photo">
-                          {% if clinic.photo_url %}
-                              <img src="{{ clinic.photo_url }}" alt="{{ clinic.name }}">
-                          {% else %}
-                              <img src="https://via.placeholder.com/300x200?text=Клиника" alt="Фото клиники">
-                          {% endif %}
-                      </div>
-                      <div class="clinic-info">
-                          <h3 class="h5">{{ clinic.name }}</h3>
-                          <p class="address">{{ clinic.address|truncatechars:50 }}</p>
-                          <p class="phone text-muted">{{ clinic.phone }}</p>
-                          <a href="{% url 'clinic_detail' clinic.id %}" class="btn btn-outline-primary btn-sm">Подробнее</a>
-                      </div>
-                  </div>
-              {% endfor %}
-          </div>
-          <button class="carousel-arrow right" onclick="scrollClinics(1)" aria-label="Следующая клиника">
-              <i class="bi bi-chevron-right"></i>
-          </button>
-      </div>
-  </section>
+    <div class="carousel-container">
+        <button class="carousel-arrow left" onclick="scrollClinics(-1)" aria-label="Предыдущая клиника">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <div class="carousel-wrapper" id="clinics-wrapper">
+            {% for clinic in clinics %}
+            <div class="clinic-card">
+                <div class="clinic-photo">
+                    {% if clinic.photo_url %}
+                    <img src="{{ clinic.photo_url }}" alt="{{ clinic.name }}">
+                    {% else %}
+                    <img src="https://via.placeholder.com/300x200?text=Клиника" alt="Фото клиники">
+                    {% endif %}
+                </div>
+                <div class="clinic-info">
+                    <h3 class="h5">{{ clinic.name }}</h3>
+                    <p class="address">{{ clinic.address|truncatechars:50 }}</p>
+                    <p class="phone text-muted">{{ clinic.phone }}</p>
+                    <a href="{% url 'clinic_detail' clinic.id %}" class="btn btn-outline-primary btn-sm">Подробнее</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="carousel-arrow right" onclick="scrollClinics(1)" aria-label="Следующая клиника">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    </div>
+</section>
 {% endblock %}
