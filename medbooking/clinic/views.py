@@ -535,64 +535,90 @@ def download_medical_file(request, file_id):
 
 @login_required
 def admin_appointments(request):
-    """Admin view for clinic appointments."""
+    """Admin view for clinic appointments with doctor/patient search and clinic-bound access."""
     if request.user.role != 'admin':
         return redirect('main')
 
-    clinics = Clinic.objects.filter(doctors__isnull=False).distinct()
+    # Определяем доступные клиники
+    if hasattr(request.user, 'clinic') and request.user.clinic:
+        # Админ привязан к клинике — работает только с ней
+        clinics = [request.user.clinic]
+        selected_clinic = request.user.clinic
+        selected_clinic_id = str(selected_clinic.id)
+    else:
+        # Админ без привязки — может выбирать
+        clinics = Clinic.objects.filter(doctors__isnull=False).distinct()
+        selected_clinic_id = request.GET.get('clinic')
+        selected_clinic = None
+        if selected_clinic_id:
+            try:
+                selected_clinic = Clinic.objects.get(id=selected_clinic_id)
+            except Clinic.DoesNotExist:
+                messages.error(request, "Клиника не найдена.")
 
-    selected_clinic_id = request.GET.get('clinic')
-    selected_date_str = request.GET.get('date')  
+    selected_date_str = request.GET.get('date')
+    search_query = request.GET.get('search', '').strip()
     selected_date = None
 
     appointments = []
     patients = []
     doctors = []
-    schedules = []  
-    if selected_clinic_id:
-        try:
-            selected_clinic = Clinic.objects.get(id=selected_clinic_id)
-            doctors = Doctor.objects.filter(clinics=selected_clinic).distinct()
-            patients = Patient.objects.filter(
-                appointments__schedule__clinic=selected_clinic
-            ).distinct()
-            appointments = Appointment.objects.filter(
-                schedule__clinic=selected_clinic
-            ).select_related(
-                'patient', 'schedule__doctor', 'schedule__clinic'
-            ).order_by('-schedule__date', '-schedule__time')
+    schedules = []
 
-            if selected_date_str:
-                try:
-                    selected_date = date.fromisoformat(selected_date_str)
-                except ValueError:
-                    selected_date_str = None
+    if selected_clinic:
+        # Фильтрация по дате
+        if selected_date_str:
+            try:
+                selected_date = date.fromisoformat(selected_date_str)
+            except ValueError:
+                pass
 
-            schedule_qs = Schedule.objects.filter(clinic=selected_clinic).select_related('doctor')
-            if selected_date:
-                schedule_qs = schedule_qs.filter(date=selected_date)
-            schedule_qs = schedule_qs.order_by('doctor', 'date', 'time')
+        # Получаем врачей и пациентов
+        doctors = Doctor.objects.filter(clinics=selected_clinic).distinct()
+        patients = Patient.objects.filter(
+            appointments__schedule__clinic=selected_clinic
+        ).distinct()
 
-            from collections import defaultdict
-            schedules_by_doctor = defaultdict(list)
-            for slot in schedule_qs:
-                schedules_by_doctor[slot.doctor].append(slot)
-            schedules = schedules_by_doctor.items()
+        # Получаем приёмы с опциональным поиском
+        appt_qs = Appointment.objects.filter(schedule__clinic=selected_clinic).select_related(
+            'patient', 'schedule__doctor', 'schedule__clinic'
+        )
 
-        except Clinic.DoesNotExist:
-            messages.error(request, "Клиника не найдена.")
-    else:
-        selected_clinic = None
+        if search_query:
+            from django.db.models import Q
+            appt_qs = appt_qs.filter(
+                Q(patient__full_name__icontains=search_query) |
+                Q(schedule__doctor__full_name__icontains=search_query) |
+                Q(patient__phone__icontains=search_query)
+            )
 
-    return render(request, 'clinic/appointments/admin_appointments.html', {
+        appointments = appt_qs.order_by('-schedule__date', '-schedule__time')
+
+        # Получаем расписание с предзагрузкой приёмов
+        schedule_qs = Schedule.objects.filter(clinic=selected_clinic).select_related('doctor', 'appointment')
+        if selected_date:
+            schedule_qs = schedule_qs.filter(date=selected_date)
+        schedule_qs = schedule_qs.order_by('doctor', 'date', 'time')
+
+        # Группировка по врачам
+        from collections import defaultdict
+        schedules_by_doctor = defaultdict(list)
+        for slot in schedule_qs:
+            schedules_by_doctor[slot.doctor].append(slot)
+        schedules = schedules_by_doctor.items()
+
+    context = {
         'clinics': clinics,
         'selected_clinic_id': selected_clinic_id,
         'selected_date': selected_date_str,
+        'search_query': search_query,
         'appointments': appointments,
         'patients': patients,
         'doctors': doctors,
-        'schedules': schedules,  # передаём расписание
-    })
+        'schedules': schedules,
+    }
+
+    return render(request, 'clinic/appointments/admin_appointments.html', context)
 
 
 @login_required

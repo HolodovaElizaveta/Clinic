@@ -11,14 +11,14 @@ from .models import User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('username', 'email', 'role', 'created_at', 'is_staff')
+    list_display = ('username', 'email', 'role', 'created_at', 'is_staff','clinic')
     list_filter = ('role', 'is_staff', 'is_active', 'created_at')
     search_fields = ('username', 'email', 'first_name', 'last_name')
     ordering = ('-created_at',)
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
         ('Персональная информация', {'fields': ('first_name', 'last_name', 'email')}),
-        ('Роль и доступ', {'fields': ('role', 'is_staff', 'is_active', 'is_superuser')}),
+        ('Роль и доступ', {'fields': ('role', 'is_staff', 'is_active', 'is_superuser','clinic')}),
         ('Важные даты', {'fields': ('last_login', 'created_at')}),
     )
     readonly_fields = ('created_at',)

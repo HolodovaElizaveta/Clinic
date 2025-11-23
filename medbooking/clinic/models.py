@@ -17,11 +17,6 @@ class Gender(models.TextChoices):
     MALE = 'male', 'Мужской'
     FEMALE = 'female', 'Женский'
 
-# ====== Модели ======
-class User(AbstractUser):
-    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.PATIENT)
-    created_at = models.DateTimeField(auto_now_add=True)
-   
 
 class Clinic(models.Model):
     name = models.CharField(max_length=255)
@@ -37,6 +32,14 @@ class Clinic(models.Model):
 
     def __str__(self):
         return self.name
+
+# ====== Модели ======
+class User(AbstractUser):
+    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.PATIENT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    clinic = models.ForeignKey(Clinic, on_delete=models.SET_NULL, null=True, blank=True, related_name='admins')  # <-- новое поле
+    
+   
 
 class Patient(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='patient_profile')
