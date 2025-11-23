@@ -22,6 +22,8 @@ from django.core.mail import send_mail
 from django.http import FileResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
+from django.db import models  
+from django.db.models import Q  
 
 from .models import (
     Doctor, Clinic, User, Patient, Appointment, Schedule,
@@ -29,12 +31,22 @@ from .models import (
 )
 
 
+
 def index(request):
     """Render main page with doctors, clinics, and appointments."""
-    doctors = Doctor.objects.all()
+    # --- Поиск по врачам ---
+    search_query = request.GET.get('doctor_search', '').strip()
+    if search_query:
+        doctors = Doctor.objects.filter(
+            models.Q(full_name__icontains=search_query) |
+            models.Q(specialization__icontains=search_query)
+        )
+    else:
+        doctors = Doctor.objects.all()
+
     clinics = Clinic.objects.all()
-    patient = Patient.objects.all()
     specializations = Doctor.objects.values_list('specialization', flat=True).distinct().order_by('specialization')
+
     upcoming_appointments_doctor = None
     if request.user.is_authenticated and request.user.role == 'doctor':
         doctor_profile = request.user.doctor_profile
@@ -47,7 +59,6 @@ def index(request):
             schedule__date__lte=tomorrow.date()
         ).select_related('patient', 'schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
 
-    # Если пользователь — пациент, добавляем уведомления
     upcoming_appointments = None
     if request.user.is_authenticated and request.user.role == 'patient':
         patient_profile = request.user.patient_profile
@@ -63,9 +74,9 @@ def index(request):
         'doctors': doctors,
         'clinics': clinics,
         'specializations': specializations,
-        'patient': patient,
         'upcoming_appointments_doctor': upcoming_appointments_doctor,
         'upcoming_appointments': upcoming_appointments,
+        'doctor_search_query': search_query,  
     })
 
 
