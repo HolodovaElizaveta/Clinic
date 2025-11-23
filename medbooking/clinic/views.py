@@ -1,20 +1,36 @@
-# clinic/views.py
-from django.http import FileResponse
-from django.shortcuts import render, get_object_or_404
-from .models import Doctor, Clinic
-from django.contrib.auth.hashers import check_password
-from django.contrib.auth.password_validation import validate_password
-from django.core.cache import cache
-from django.core.exceptions import ValidationError
+"""
+Views for clinic application.
+"""
 
+import os
+from datetime import datetime, date, time, timedelta
+from io import BytesIO
 
-# clinic/views.py
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
+from django.conf import settings
 from django.contrib import messages
-from .models import Doctor, Clinic,User,Patient,AppointmentStatus 
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import check_password
+from django.core.cache import cache
+from django.core.files.base import ContentFile
+from django.core.mail import send_mail
+from django.http import FileResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+
+from .models import (
+    Doctor, Clinic, User, Patient, Appointment, Schedule,
+    MedicalFile, AppointmentStatus
+)
+
 
 def index(request):
+    """Render main page with doctors, clinics, and appointments."""
     doctors = Doctor.objects.all()
     clinics = Clinic.objects.all()
     patient = Patient.objects.all()
@@ -31,7 +47,7 @@ def index(request):
             schedule__date__lte=tomorrow.date()
         ).select_related('patient', 'schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
 
-         # Если пользователь — пациент, добавляем уведомления
+    # Если пользователь — пациент, добавляем уведомления
     upcoming_appointments = None
     if request.user.is_authenticated and request.user.role == 'patient':
         patient_profile = request.user.patient_profile
@@ -47,20 +63,14 @@ def index(request):
         'doctors': doctors,
         'clinics': clinics,
         'specializations': specializations,
-        'patient' : patient,
+        'patient': patient,
         'upcoming_appointments_doctor': upcoming_appointments_doctor,
         'upcoming_appointments': upcoming_appointments,
     })
 
 
-from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
-from .models import User, Patient, Gender
-
 def login_view(request):
+    """Handle user login and registration."""
     if request.method == 'POST':
         if 'login' in request.POST:
             # === Ограничение по IP ===
@@ -68,7 +78,7 @@ def login_view(request):
             cache_key = f"login_attempts_{ip}"
             attempts = cache.get(cache_key, 0)
 
-            if attempts >= 5:  # максимум 5 попыток
+            if attempts >= 5:
                 messages.error(request, "Слишком много неудачных попыток входа. Повторите через 15 минут.")
                 return render(request, 'clinic/registration/login.html')
 
@@ -80,21 +90,18 @@ def login_view(request):
                 user = User.objects.get(email=email)
                 auth_user = authenticate(request, username=email, password=password)
                 if auth_user:
-                    # Успешный вход — сброс счётчика
                     cache.delete(cache_key)
                     login(request, auth_user)
                     return redirect('main')
                 else:
-                    # Неудачная попытка — увеличить счётчик
-                    cache.set(cache_key, attempts + 1, timeout=900)  # 900 сек = 15 минут
+                    cache.set(cache_key, attempts + 1, timeout=900)
                     messages.error(request, "Неверный email или пароль.")
             except User.DoesNotExist:
-                # Неудачная попытка — увеличить счётчик
                 cache.set(cache_key, attempts + 1, timeout=900)
                 messages.error(request, "Неверный email или пароль.")
 
         elif 'register' in request.POST:
-        # Регистрация
+            # Регистрация
             full_name = request.POST.get('full_name').strip()
             email = request.POST.get('email').strip()
             phone = request.POST.get('phone').strip()
@@ -122,7 +129,6 @@ def login_view(request):
             # Проверка возраста (≥18 лет)
             if not errors and birth_date_str:
                 try:
-                    from datetime import date
                     birth_date = date.fromisoformat(birth_date_str)
                     today = date.today()
                     age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
@@ -135,13 +141,10 @@ def login_view(request):
             if password1 != password2:
                 errors.append("Пароли не совпадают.")
             elif password1:
-                # Проверка длины
                 if len(password1) < 8:
                     errors.append("Пароль должен содержать не менее 8 символов.")
-                # Проверка на цифру
                 if not any(c.isdigit() for c in password1):
                     errors.append("Пароль должен содержать хотя бы одну цифру.")
-                # Проверка на заглавную букву
                 if not any(c.isupper() for c in password1):
                     errors.append("Пароль должен содержать хотя бы одну заглавную букву.")
 
@@ -165,65 +168,64 @@ def login_view(request):
                 }
                 return render(request, 'clinic/registration/login.html', context)
 
-        # Создание пользователя
-        try:
-            user = User.objects.create_user(
-                username=email,
-                email=email,
-                password=password1,
-                role='patient'
-            )
-            Patient.objects.create(
-                user=user,
-                full_name=full_name,
-                phone=phone,
-                birth_date=birth_date,
-                gender=gender
-            )
-            messages.success(request, "Регистрация прошла успешно! Войдите в систему.")
-            return redirect('login')
-        except Exception as e:
-            messages.error(request, "Ошибка при регистрации. Попробуйте позже.")
+            # Создание пользователя
+            try:
+                user = User.objects.create_user(
+                    username=email,
+                    email=email,
+                    password=password1,
+                    role='patient'
+                )
+                Patient.objects.create(
+                    user=user,
+                    full_name=full_name,
+                    phone=phone,
+                    birth_date=birth_date,
+                    gender=gender
+                )
+                messages.success(request, "Регистрация прошла успешно! Войдите в систему.")
+                return redirect('login')
+            except Exception as e:
+                messages.error(request, "Ошибка при регистрации. Попробуйте позже.")
 
     return render(request, 'clinic/registration/login.html')
 
+
 def logout_view(request):
+    """Log out the current user."""
     logout(request)
     return redirect('login')
+
+
 def book_appointment(request):
+    """Display list of doctors for booking."""
     doctors = Doctor.objects.all()
     return render(request, 'clinic/doctors/list.html', {'doctors': doctors})
 
+
 def book_doctor(request, doctor_id):
+    """Redirect to doctor list with selected doctor (placeholder)."""
     doctor = get_object_or_404(Doctor, id=doctor_id)
-    return render(request, 'clinic/doctors/list.html', {'doctor': doctor}) 
+    return render(request, 'clinic/doctors/list.html', {'doctor': doctor})
+
 
 def clinic_detail(request, clinic_id):
+    """Show clinic details and associated doctors."""
     clinic = get_object_or_404(Clinic, id=clinic_id)
-    doctors = clinic.doctors.all()  # ← врачи, связанные с этой клиникой
+    doctors = clinic.doctors.all()
     return render(request, 'clinic/clinics/detail.html', {
         'clinic': clinic,
         'doctors': doctors
     })
-# clinic/views.py (добавьте в конец)
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .models import Appointment, Schedule, VisitHistory, MedicalFile
-from django.utils import timezone
-from datetime import datetime
-
-from datetime import date, timedelta
 
 @login_required
 def my_appointments(request):
-    """Страница 'Мои записи' для пациента"""
+    """Page 'My appointments' for patient."""
     if request.user.role != 'patient':
         return redirect('main')
     patient = request.user.patient_profile
     appointments = patient.appointments.select_related('schedule__doctor', 'schedule__clinic').order_by('-schedule__date')
-     # Уведомления: записи на сегодня и завтра
     now = datetime.now()
     tomorrow = now + timedelta(days=1)
     upcoming_appointments = patient.appointments.filter(
@@ -243,9 +245,10 @@ def my_appointments(request):
         'upcoming_appointments': upcoming_appointments,
     })
 
+
 @login_required
 def doctor_appointments(request):
-    """Страница 'Мои приёмы' для врача"""
+    """Page 'My appointments' for doctor."""
     if request.user.role != 'doctor':
         return redirect('main')
     doctor = request.user.doctor_profile
@@ -259,8 +262,6 @@ def doctor_appointments(request):
         schedule__doctor=doctor
     ).select_related('patient', 'schedule__clinic', 'schedule__doctor')
 
-
-    # Уведомления для врача: записи на сегодня и завтра
     now = datetime.now()
     tomorrow = now + timedelta(days=1)
     upcoming_appointments_doctor = Appointment.objects.filter(
@@ -278,18 +279,18 @@ def doctor_appointments(request):
         'doctor': doctor,
         'upcoming_appointments_doctor': upcoming_appointments_doctor,
     })
+
+
 @login_required
 def create_appointment(request, doctor_id):
+    """Create appointment with a doctor."""
     doctor = get_object_or_404(Doctor, id=doctor_id)
     patient = request.user.patient_profile
     clinics = doctor.clinics.all()
 
-    # GET-параметры
     selected_clinic = request.GET.get('clinic') or request.POST.get('clinic_id')
     selected_date_str = request.GET.get('date') or request.POST.get('date')
 
-    # Текущая дата и время (без timezone для простоты, если не используется)
-    from datetime import datetime, date, time
     now = datetime.now()
     today = now.date()
     current_time = now.time()
@@ -297,15 +298,13 @@ def create_appointment(request, doctor_id):
     available_dates = []
     times = []
 
-    # Шаг 1: Загрузка доступных дат (только >= сегодня)
     if selected_clinic:
         available_dates = Schedule.objects.filter(
             doctor=doctor,
             clinic_id=selected_clinic,
-            date__gte=today  # ← Только сегодня и будущие даты
+            date__gte=today
         ).values_list('date', flat=True).distinct().order_by('date')
 
-    # Шаг 2: Загрузка доступных времён (только свободные и не прошедшие)
     if selected_clinic and selected_date_str:
         try:
             selected_date = date.fromisoformat(selected_date_str)
@@ -313,25 +312,21 @@ def create_appointment(request, doctor_id):
             selected_date = None
 
         if selected_date:
-            # Определение минимального времени для сегодняшнего дня
             min_time = current_time if selected_date == today else time.min
 
-            # Занятые слоты
             occupied_schedule_ids = Appointment.objects.filter(
                 schedule__doctor=doctor,
                 schedule__clinic_id=selected_clinic,
                 schedule__date=selected_date
             ).values_list('schedule_id', flat=True)
 
-            # Свободные и актуальные слоты
             times = Schedule.objects.filter(
                 doctor=doctor,
                 clinic_id=selected_clinic,
                 date=selected_date,
-                time__gt=min_time  # ← Только будущие времена (строго больше)
+                time__gt=min_time
             ).exclude(id__in=occupied_schedule_ids).order_by('time')
 
-    # POST-обработка
     if request.method == 'POST':
         clinic_id = request.POST.get('clinic_id')
         date_str = request.POST.get('date')
@@ -369,19 +364,20 @@ def create_appointment(request, doctor_id):
         'times': times,
     })
 
+
 @login_required
 def cancel_appointment(request, appointment_id):
-    """Пациент отменяет запись"""
+    """Patient cancels appointment."""
     appointment = get_object_or_404(Appointment, id=appointment_id, patient__user=request.user)
     appointment.status = AppointmentStatus.CANCELLED
     appointment.save()
     messages.success(request, "Запись отменена.")
     return redirect('my_appointments')
 
-# clinic/views.py
 
 @login_required
 def update_appointment_status(request, appointment_id):
+    """Doctor updates appointment status."""
     if request.user.role != 'doctor':
         return redirect('main')
     appointment = get_object_or_404(Appointment, id=appointment_id, schedule__doctor__user=request.user)
@@ -395,16 +391,8 @@ def update_appointment_status(request, appointment_id):
             messages.error(request, "Недопустимый статус.")
     return redirect('doctor_appointments')
 
-# clinic/views.py
-import os
-from django.conf import settings
-from io import BytesIO
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 
-# Регистрация шрифта с правильным путём
+# Font registration
 font_path = os.path.join(settings.BASE_DIR, 'clinic', 'static', 'fonts', 'DejaVuSans.ttf')
 try:
     pdfmetrics.registerFont(TTFont('DejaVu', font_path))
@@ -413,8 +401,10 @@ except Exception as e:
     print(f"Шрифт не найден: {e}")
     DEFAULT_FONT = 'Helvetica'
 
+
 @login_required
 def create_visit_history(request, appointment_id):
+    """Generate PDF medical conclusion."""
     if request.user.role != 'doctor':
         return redirect('main')
     appointment = get_object_or_404(Appointment, id=appointment_id, schedule__doctor__user=request.user)
@@ -428,19 +418,16 @@ def create_visit_history(request, appointment_id):
             p = canvas.Canvas(buffer, pagesize=A4)
             width, height = A4
 
-            # === СТИЛИ ===
             try:
                 pdfmetrics.registerFont(TTFont('DejaVu', font_path))
                 font_normal = 'DejaVu'
             except:
                 font_normal = 'Helvetica'
 
-            # === ГЕРБОВАЯ РАМКА (имитация) ===
             p.setStrokeColorRGB(0.8, 0.8, 0.8)
             p.setLineWidth(0.5)
             p.rect(20, 20, width - 40, height - 40)
 
-            # === ЛОГОТИП И НАЗВАНИЕ КЛИНИКИ ===
             p.setFont(font_normal, 14)
             p.setFillColorRGB(0, 0, 0)
             p.drawCentredString(width / 2, height - 50, "МЕДИЦИНСКИЙ ЦЕНТР «MEDCLINIC»")
@@ -448,11 +435,9 @@ def create_visit_history(request, appointment_id):
             p.drawCentredString(width / 2, height - 70, "Лицензия № ЛО-77-01-023456 от 15.03.2020")
             p.drawCentredString(width / 2, height - 85, "г. Москва, ул. Здоровья, д. 15")
 
-            # === ЗАГОЛОВОК ===
             p.setFont(font_normal, 16)
             p.drawCentredString(width / 2, height - 120, "МЕДИЦИНСКОЕ ЗАКЛЮЧЕНИЕ")
 
-            # === ИНФОРМАЦИЯ О ПОМЕЩЕНИИ И ПАЦИЕНТЕ ===
             y = height - 150
             p.setFont(font_normal, 11)
             p.drawString(50, y, f"Пациент: {appointment.patient.full_name}")
@@ -470,7 +455,6 @@ def create_visit_history(request, appointment_id):
             p.drawString(50, y, f"Клиника: {appointment.schedule.clinic.name}")
             y -= 30
 
-            # === ДИАГНОЗ ===
             p.setFont(font_normal, 12)
             p.setFillColorRGB(0, 0, 0)
             p.drawString(50, y, "Диагноз:")
@@ -481,7 +465,6 @@ def create_visit_history(request, appointment_id):
                 y -= 16
             y -= 10
 
-            # === РЕКОМЕНДАЦИИ ===
             p.setFont(font_normal, 12)
             p.drawString(50, y, "Рекомендации:")
             y -= 20
@@ -490,13 +473,11 @@ def create_visit_history(request, appointment_id):
                 p.drawString(70, y, line)
                 y -= 16
 
-            # === ПОДПИСЬ И ПЕЧАТЬ ===
             y = 130
             p.setFont(font_normal, 11)
-            p.drawString(50, y, "Врач: ____________________ / {}/".format(appointment.schedule.doctor.full_name))
+            p.drawString(50, y, f"Врач: ____________________ / {appointment.schedule.doctor.full_name}/")
             y -= 25
             p.drawString(50, y, "Печать медицинского учреждения:")
-            # Имитация печати (круг)
             p.setStrokeColorRGB(0.7, 0.7, 0.7)
             p.setFillColorRGB(1, 1, 1)
             p.circle(400, y - 5, 25, stroke=1, fill=1)
@@ -505,7 +486,6 @@ def create_visit_history(request, appointment_id):
             p.drawCentredString(400, y - 8, "MEDCLINIC")
             p.drawCentredString(400, y - 18, "г. Москва")
 
-            # === НИЖНИЙ КОЛОНТИТУЛ ===
             p.setFont(font_normal, 8)
             p.setFillColorRGB(0.5, 0.5, 0.5)
             p.drawString(50, 30, "Документ сформирован автоматически. Подпись и печать проставляются при печати.")
@@ -517,12 +497,10 @@ def create_visit_history(request, appointment_id):
             pdf_file = buffer.getvalue()
             buffer.close()
 
-            from django.core.files.base import ContentFile
             medical_file = MedicalFile(
                 owner=appointment.patient,
                 appointment=appointment
             )
-            
             medical_file.file_path.save(
                 f'zaklyuchenie_{appointment.id}.pdf',
                 ContentFile(pdf_file),
@@ -537,53 +515,70 @@ def create_visit_history(request, appointment_id):
 
     return redirect('doctor_appointments')
 
+
 @login_required
 def download_medical_file(request, file_id):
+    """Download medical file if allowed."""
     medical_file = get_object_or_404(MedicalFile, id=file_id)
 
     if not medical_file.can_view_by(request.user):
         messages.error(request, "У вас нет доступа к этому файлу.")
         return redirect('main')
 
-    # Отправляем PDF-файл
     return FileResponse(
         medical_file.file_path.open('rb'),
         content_type='application/pdf',
-        as_attachment=False,  # inline — открывать в браузере
+        as_attachment=False,
         filename=f"заключение_{file_id}.pdf"
     )
 
-# clinic/views.py
 
 @login_required
 def admin_appointments(request):
-    """Страница 'Мои записи' для администратора клиники"""
+    """Admin view for clinic appointments."""
     if request.user.role != 'admin':
         return redirect('main')
 
-    # Все клиники, где есть хотя бы один врач
     clinics = Clinic.objects.filter(doctors__isnull=False).distinct()
 
     selected_clinic_id = request.GET.get('clinic')
+    selected_date_str = request.GET.get('date')  
+    selected_date = None
+
     appointments = []
     patients = []
     doctors = []
-
+    schedules = []  
     if selected_clinic_id:
         try:
             selected_clinic = Clinic.objects.get(id=selected_clinic_id)
-            # Все приёмы в выбранной клинике
+            doctors = Doctor.objects.filter(clinics=selected_clinic).distinct()
+            patients = Patient.objects.filter(
+                appointments__schedule__clinic=selected_clinic
+            ).distinct()
             appointments = Appointment.objects.filter(
                 schedule__clinic=selected_clinic
             ).select_related(
                 'patient', 'schedule__doctor', 'schedule__clinic'
             ).order_by('-schedule__date', '-schedule__time')
 
-            # Все пациенты и врачи в этой клинике
-            patients = Patient.objects.filter(
-                appointments__schedule__clinic=selected_clinic
-            ).distinct()
-            doctors = Doctor.objects.filter(clinics=selected_clinic).distinct()
+            if selected_date_str:
+                try:
+                    selected_date = date.fromisoformat(selected_date_str)
+                except ValueError:
+                    selected_date_str = None
+
+            schedule_qs = Schedule.objects.filter(clinic=selected_clinic).select_related('doctor')
+            if selected_date:
+                schedule_qs = schedule_qs.filter(date=selected_date)
+            schedule_qs = schedule_qs.order_by('doctor', 'date', 'time')
+
+            from collections import defaultdict
+            schedules_by_doctor = defaultdict(list)
+            for slot in schedule_qs:
+                schedules_by_doctor[slot.doctor].append(slot)
+            schedules = schedules_by_doctor.items()
+
         except Clinic.DoesNotExist:
             messages.error(request, "Клиника не найдена.")
     else:
@@ -592,15 +587,17 @@ def admin_appointments(request):
     return render(request, 'clinic/appointments/admin_appointments.html', {
         'clinics': clinics,
         'selected_clinic_id': selected_clinic_id,
+        'selected_date': selected_date_str,
         'appointments': appointments,
         'patients': patients,
         'doctors': doctors,
+        'schedules': schedules,  # передаём расписание
     })
 
 
 @login_required
 def admin_update_appointment_status(request, appointment_id):
-    """Админ может обновлять статус любого приёма"""
+    """Admin updates any appointment status."""
     if request.user.role != 'admin':
         return redirect('main')
     
@@ -615,12 +612,12 @@ def admin_update_appointment_status(request, appointment_id):
             messages.error(request, "Недопустимый статус.")
     return redirect('admin_appointments')
 
-# clinic/views.py
 
 from django import forms
-from datetime import date
+
 
 class AddScheduleForm(forms.Form):
+    """Form for doctor to add schedule slot."""
     clinic = forms.ModelChoiceField(
         queryset=Clinic.objects.none(),
         label="Клиника",
@@ -647,7 +644,6 @@ class AddScheduleForm(forms.Form):
         time_val = cleaned_data.get('time')
 
         if clinic and date_val and time_val:
-            # Проверка на уникальность (doctor, date, time, clinic)
             if Schedule.objects.filter(
                 doctor=self.initial.get('doctor'),
                 clinic=clinic,
@@ -660,7 +656,7 @@ class AddScheduleForm(forms.Form):
 
 @login_required
 def add_doctor_schedule(request):
-    """Врач добавляет новый слот в своё расписание"""
+    """Doctor adds a new schedule slot."""
     if request.user.role != 'doctor':
         return redirect('main')
     
@@ -668,7 +664,7 @@ def add_doctor_schedule(request):
 
     if request.method == 'POST':
         form = AddScheduleForm(doctor, request.POST)
-        form.initial['doctor'] = doctor  # для валидации
+        form.initial['doctor'] = doctor
         if form.is_valid():
             Schedule.objects.create(
                 doctor=doctor,
@@ -686,19 +682,12 @@ def add_doctor_schedule(request):
 
     return render(request, 'clinic/appointments/add_schedule.html', {'form': form})
 
-# clinic/views.py
-
-from django.core.mail import send_mail
-from django.utils import timezone
-from datetime import timedelta
 
 def send_appointment_reminders():
     """
-    Отправляет email-напоминания пациентам за 24 часа до приёма.
-    Вызывать раз в час через cron или Celery.
+    Send email reminders to patients 24 hours before appointment.
     """
     now = timezone.now()
-    # Ищем записи, где приём через 24±0.5 часа (чтобы не пропустить при запуске раз в час)
     upcoming_time = now + timedelta(hours=24)
     time_window_start = upcoming_time - timedelta(minutes=30)
     time_window_end = upcoming_time + timedelta(minutes=30)
@@ -710,7 +699,6 @@ def send_appointment_reminders():
     ).select_related('patient', 'schedule__doctor', 'schedule__clinic')
 
     for appt in appointments:
-        # Проверяем точное время (на случай, если дата совпадает, а время — нет)
         appointment_datetime = timezone.make_aware(
             datetime.combine(appt.schedule.date, appt.schedule.time)
         )
@@ -718,21 +706,18 @@ def send_appointment_reminders():
             try:
                 send_mail(
                     subject="Напоминание о приёме в MEDCLINIC",
-                    message=f"""
-Здравствуйте, {appt.patient.full_name}!
-
-Напоминаем, что у вас записан приём:
-- Врач: {appt.schedule.doctor.full_name}
-- Дата: {appt.schedule.date}
-- Время: {appt.schedule.time}
-- Клиника: {appt.schedule.clinic.name}
-- Адрес: {appt.schedule.clinic.address}
-
-Пожалуйста, не опаздывайте!
-
-С уважением,
-Команда MEDCLINIC
-                    """.strip(),
+                    message=(
+                        f"Здравствуйте, {appt.patient.full_name}!\n\n"
+                        f"Напоминаем, что у вас записан приём:\n"
+                        f"- Врач: {appt.schedule.doctor.full_name}\n"
+                        f"- Дата: {appt.schedule.date}\n"
+                        f"- Время: {appt.schedule.time}\n"
+                        f"- Клиника: {appt.schedule.clinic.name}\n"
+                        f"- Адрес: {appt.schedule.clinic.address}\n\n"
+                        f"Пожалуйста, не опаздывайте!\n\n"
+                        f"С уважением,\n"
+                        f"Команда MEDCLINIC"
+                    ),
                     from_email="info@medclinic.com",
                     recipient_list=[appt.patient.user.email],
                     fail_silently=False,
@@ -746,14 +731,12 @@ def send_appointment_reminders():
 
 @login_required
 def update_profile(request):
-    """Редактирование профиля пациента (без email и пароля)"""
+    """Update patient profile (excluding email)."""
     if request.user.role != 'patient':
         return redirect('main')
     
     if request.method == 'POST':
         patient = request.user.patient_profile
-        user = request.user
-
         full_name = request.POST.get('full_name').strip()
         phone = request.POST.get('phone').strip()
         birth_date_str = request.POST.get('birth_date')
@@ -770,10 +753,8 @@ def update_profile(request):
         if not gender:
             errors.append("Укажите пол.")
 
-        # Проверка возраста ≥18
         if birth_date_str:
             try:
-                from datetime import date
                 birth_date = date.fromisoformat(birth_date_str)
                 today = date.today()
                 age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
@@ -786,10 +767,9 @@ def update_profile(request):
             for err in errors:
                 messages.error(request, err)
         else:
-            # Обновление данных (email НЕ обновляется)
             patient.full_name = full_name
             patient.phone = phone
-            patient.birth_date = birth_date_str
+            patient.birth_date = birth_date
             patient.gender = gender
             patient.save()
             messages.success(request, "Данные профиля успешно обновлены!")
@@ -799,7 +779,7 @@ def update_profile(request):
 
 @login_required
 def change_password(request):
-    """Смена пароля с проверкой текущего"""
+    """Change password with current password verification."""
     if request.user.role != 'patient':
         return redirect('main')
     
@@ -810,23 +790,14 @@ def change_password(request):
 
         errors = []
 
-        # Проверка текущего пароля
         if not check_password(current_password, request.user.password):
             errors.append("Текущий пароль введён неверно.")
-
-        # Проверка совпадения
         if new_password1 != new_password2:
             errors.append("Новые пароли не совпадают.")
-
-        # Проверка длины
         if len(new_password1) < 8:
             errors.append("Пароль должен содержать не менее 8 символов.")
-
-        # Проверка на цифру
         if not any(c.isdigit() for c in new_password1):
             errors.append("Пароль должен содержать хотя бы одну цифру.")
-
-        # Проверка на заглавную букву
         if not any(c.isupper() for c in new_password1):
             errors.append("Пароль должен содержать хотя бы одну заглавную букву.")
 
@@ -836,7 +807,6 @@ def change_password(request):
         else:
             request.user.set_password(new_password1)
             request.user.save()
-            # Обновляем сессию, чтобы не разлогинить
             from django.contrib.auth import update_session_auth_hash
             update_session_auth_hash(request, request.user)
             messages.success(request, "Пароль успешно изменён!")

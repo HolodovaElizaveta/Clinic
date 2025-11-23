@@ -11,7 +11,6 @@ from .models import User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    # Переопределяем, чтобы использовать стандартный интерфейс с кнопкой "Изменить пароль"
     list_display = ('username', 'email', 'role', 'created_at', 'is_staff')
     list_filter = ('role', 'is_staff', 'is_active', 'created_at')
     search_fields = ('username', 'email', 'first_name', 'last_name')
@@ -24,7 +23,6 @@ class UserAdmin(BaseUserAdmin):
     )
     readonly_fields = ('created_at',)
 
-    # Это важно — добавляет кнопку "Изменить пароль"
     def get_fieldsets(self, request, obj=None):
         if not obj:
             return super().get_fieldsets(request, obj)

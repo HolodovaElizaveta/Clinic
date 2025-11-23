@@ -139,17 +139,17 @@
                     </div>
 
                     {% elif user.role == 'admin' %}
-                    <span class="welcome text-muted d-none d-md-inline">
-                        Добрый день, администратор {{ user.username }}!
-                    </span>
+        
                     <a href="{% url 'admin_appointments' %}" class="btn btn-outline-primary btn-sm px-3">
                         <i class="bi bi-calendar-check me-1"></i> Управление
                     </a>
-                    <a href="{% url 'admin:index' %}" class="btn btn-outline-danger btn-sm ms-1 px-3">
+                    
+                    {% endif %}
+                    {% if user.is_superuser %}
+                <a href="{% url 'admin:index' %}" class="btn btn-outline-danger btn-sm ms-1 px-3">
                         <i class="bi bi-shield-lock me-1"></i> Admin
                     </a>
                     {% endif %}
-
                     <!-- Кнопка выхода -->
                     <form method="post" action="{% url 'logout' %}" class="d-inline">
                         {% csrf_token %}

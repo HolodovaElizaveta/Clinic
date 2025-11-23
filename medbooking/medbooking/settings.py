@@ -60,8 +60,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # глобальные шаблоны (опционально)
-        'APP_DIRS': True,  # ← обязательно True, чтобы Django искал шаблоны в clinic/templates/
+        'DIRS': [BASE_DIR / 'templates'],  
+        'APP_DIRS': True,  
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',

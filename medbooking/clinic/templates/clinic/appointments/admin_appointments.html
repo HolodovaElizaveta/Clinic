@@ -52,6 +52,54 @@
                 </div>
             </div>
         </div>
+        <!-- Фильтр по дате для расписания -->
+{% if selected_clinic_id %}
+<div class="mb-4">
+    <form method="get" class="d-flex gap-3 align-items-end flex-wrap">
+        <input type="hidden" name="clinic" value="{{ selected_clinic_id }}">
+        <div>
+            <label class="form-label fw-bold">Фильтр расписания по дате:</label>
+            <input type="date" name="date" class="form-control" value="{{ selected_date }}">
+        </div>
+        <button type="submit" class="btn btn-outline-secondary">Применить</button>
+        {% if selected_date %}
+        <a href="?clinic={{ selected_clinic_id }}" class="btn btn-outline-secondary">Сбросить дату</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Расписание врачей -->
+<h4 class="mb-3">Расписание врачей</h4>
+{% if schedules %}
+    {% for doctor, slots in schedules %}
+        <div class="card mb-3">
+            <div class="card-header bg-light fw-bold">
+                {{ doctor.full_name }} ({{ doctor.specialization }})
+            </div>
+            <div class="card-body p-3">
+                {% if slots %}
+                    <div class="row g-2">
+                        {% for slot in slots %}
+                            <div class="col-auto">
+                                <span class="badge {% if slot.appointment_set.exists %}bg-danger text-white{% else %}bg-info text-dark{% endif %}">
+    {{ slot.date }} {{ slot.time }}
+    {% if slot.appointment_set.exists %}
+        <i class="bi bi-check-circle-fill ms-1" title="Занято"></i>
+    {% endif %}
+</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Нет слотов{% if selected_date %} на эту дату{% endif %}.</p>
+                {% endif %}
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-info">Нет расписания для отображения.</div>
+{% endif %}
+{% endif %}
 
         <!-- Приёмы -->
         <h4 class="mb-3">Приёмы в клинике</h4>
