@@ -147,7 +147,15 @@ LOGIN_REDIRECT_URL = '/'
 # После выхода — тоже на главную (опционально)
 LOGOUT_REDIRECT_URL = '/'
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Настройки SMTP Яндекс.Почты
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.yandex.ru'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_HOST_USER = 'zabolotskaya.uliana@ya.ru'
+EMAIL_HOST_PASSWORD = 'xbkyluconrtlrzav'  # Ваш пароль приложения
+DEFAULT_FROM_EMAIL = 'zabolotskaya.uliana@ya.ru'
+SERVER_EMAIL = 'zabolotskaya.uliana@ya.ru'
 
 CACHES = {
     'default': {

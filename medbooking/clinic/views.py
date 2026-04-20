@@ -29,6 +29,10 @@ from .models import (
     Doctor, Clinic, User, Patient, Appointment, Schedule,
     MedicalFile, AppointmentStatus
 )
+from django.core.mail import send_mail, EmailMessage
+from django.conf import settings
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 
 
@@ -513,17 +517,34 @@ def create_visit_history(request, appointment_id):
                 appointment=appointment
             )
             medical_file.file_path.save(
-                f'zaklyuchenie_{appointment.id}.pdf',
-                ContentFile(pdf_file),
-                save=True
-            )
-
-            appointment.status = AppointmentStatus.COMPLETED
-            appointment.save()
-            messages.success(request, "Заключение успешно создано и прикреплено к записи.")
-        else:
-            messages.error(request, "Пожалуйста, заполните диагноз и рекомендации.")
-
+        f'zaklyuchenie_{appointment.id}.pdf',
+        ContentFile(pdf_file),
+        save=True
+    )
+    
+    # 📩 ОТПРАВКА ЗАКЛЮЧЕНИЯ НА ПОЧТУ ПАЦИЕНТУ
+    try:
+        email = EmailMessage(
+            subject="Медицинское заключение — MEDCLINIC",
+            body=(
+                f"Здравствуйте, {appointment.patient.full_name}!\n\n"
+                f"Ваш приём завершён. Во вложении вы найдёте медицинское заключение.\n\n"
+                f"С уважением, команда MEDCLINIC"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[appointment.patient.user.email],
+        )
+        # Прикрепляем PDF из переменной pdf_file (она уже есть в коде)
+        email.attach('zaklyuchenie.pdf', pdf_file, 'application/pdf')
+        email.send()
+        print(f"✅ Заключение отправлено на почту: {appointment.patient.user.email}")
+    except Exception as e:
+        print(f"❌ Ошибка отправки заключения: {e}")
+    
+    # Меняем статус приёма
+    appointment.status = AppointmentStatus.COMPLETED
+    appointment.save()
+    messages.success(request, "Заключение успешно создано, сохранено и отправлено на почту пациента.")
     return redirect('doctor_appointments')
 
 
@@ -720,50 +741,64 @@ def add_doctor_schedule(request):
     return render(request, 'clinic/appointments/add_schedule.html', {'form': form})
 
 
+from django.conf import settings
+from django.core.mail import send_mail
+
 def send_appointment_reminders():
     """
-    Send email reminders to patients 24 hours before appointment.
+    Отправляет напоминания за ~24 часа до приёма.
     """
     now = timezone.now()
-    upcoming_time = now + timedelta(hours=24)
-    time_window_start = upcoming_time - timedelta(minutes=30)
-    time_window_end = upcoming_time + timedelta(minutes=30)
-
+    
+    # Ищем приёмы в диапазоне 22–26 часов от текущего момента (±2 часа для надёжности)
+    target_from = now + timedelta(hours=18)
+    target_to = now + timedelta(hours=30)
+    
+    # Убираем жёсткий фильтр по дате, чтобы не терять записи из-за таймзонов
     appointments = Appointment.objects.filter(
         status=AppointmentStatus.PLANNED,
-        reminder_sent=False,
-        schedule__date=time_window_start.date()
-    ).select_related('patient', 'schedule__doctor', 'schedule__clinic')
-
+        reminder_sent=False
+    ).select_related('patient__user', 'schedule__doctor', 'schedule__clinic')
+    
+    sent_count = 0
+    print(f"⏰ Сейчас (UTC): {now}")
+    print(f"🔍 Ищем приёмы в диапазоне: {target_from} — {target_to}")
+    print(f"📋 Кандидатов в БД: {appointments.count()}")
+    
     for appt in appointments:
-        appointment_datetime = timezone.make_aware(
-            datetime.combine(appt.schedule.date, appt.schedule.time)
-        )
-        if time_window_start <= appointment_datetime <= time_window_end:
+        # Собираем datetime приёма и делаем его timezone-aware
+        naive_dt = datetime.combine(appt.schedule.date, appt.schedule.time)
+        appt_dt = timezone.make_aware(naive_dt)
+        
+        print(f"📅 Проверка: {appt.patient.user.email} → {appt_dt}")
+        
+        if target_from <= appt_dt <= target_to:
             try:
                 send_mail(
                     subject="Напоминание о приёме в MEDCLINIC",
                     message=(
                         f"Здравствуйте, {appt.patient.full_name}!\n\n"
-                        f"Напоминаем, что у вас записан приём:\n"
-                        f"- Врач: {appt.schedule.doctor.full_name}\n"
-                        f"- Дата: {appt.schedule.date}\n"
-                        f"- Время: {appt.schedule.time}\n"
-                        f"- Клиника: {appt.schedule.clinic.name}\n"
-                        f"- Адрес: {appt.schedule.clinic.address}\n\n"
-                        f"Пожалуйста, не опаздывайте!\n\n"
-                        f"С уважением,\n"
-                        f"Команда MEDCLINIC"
+                        f"Напоминаем о вашей записи:\n"
+                        f"👨‍⚕️ Врач: {appt.schedule.doctor.full_name}\n"
+                        f"📅 Дата: {appt.schedule.date}\n"
+                        f"⏰ Время: {appt.schedule.time}\n"
+                        f"🏥 Клиника: {appt.schedule.clinic.name}\n"
+                        f"📍 Адрес: {appt.schedule.clinic.address}\n\n"
+                        f"Пожалуйста, приходите вовремя.\n"
+                        f"С уважением, команда MEDCLINIC"
                     ),
-                    from_email="info@medclinic.com",
+                    from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[appt.patient.user.email],
                     fail_silently=False,
                 )
                 appt.reminder_sent = True
                 appt.save(update_fields=['reminder_sent'])
-                print(f"Напоминание отправлено: {appt.patient.user.email}")
+                sent_count += 1
+                print(f"✅ Отправлено: {appt.patient.user.email}")
             except Exception as e:
-                print(f"Ошибка отправки напоминания для {appt.id}: {e}")
+                print(f"❌ Ошибка для {appt.id}: {e}")
+    
+    print(f"📬 Итого отправлено: {sent_count}")
 
 
 @login_required
