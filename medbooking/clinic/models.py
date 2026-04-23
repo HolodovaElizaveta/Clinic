@@ -29,6 +29,18 @@ class Clinic(models.Model):
         null=True,
         help_text="Ссылка на фото клиники (например, фасад здания)"
     )
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+
+    @property
+    def latitude_float(self):
+        """Возвращает широту как float"""
+        return float(self.latitude) if self.latitude else None
+    
+    @property
+    def longitude_float(self):
+        """Возвращает долготу как float"""
+        return float(self.longitude) if self.longitude else None
 
     def __str__(self):
         return self.name

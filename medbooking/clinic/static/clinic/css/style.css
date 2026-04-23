@@ -506,3 +506,28 @@ p { font-size: 1rem; color: #555; }
     font-size: 0.875rem;
     line-height: 1;
 }
+
+/* Стили для карты клиник */
+.map-section {
+    background-color: #f8f9fa;
+}
+
+.clinic-balloon h4 {
+    margin: 0 0 10px 0;
+    color: #007bff;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.clinic-balloon p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.clinic-balloon strong {
+    color: #333;
+}
+
+#clinic-map {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
