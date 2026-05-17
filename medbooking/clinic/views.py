@@ -116,7 +116,6 @@ def login_view(request):
                 messages.error(request, "Неверный email или пароль.")
 
         elif 'register' in request.POST:
-            # Регистрация
             full_name = request.POST.get('full_name').strip()
             email = request.POST.get('email').strip()
             phone = request.POST.get('phone').strip()
@@ -124,6 +123,9 @@ def login_view(request):
             gender = request.POST.get('gender')
             password1 = request.POST.get('password1')
             password2 = request.POST.get('password2')
+            
+            
+            consent_email = request.POST.get('consent_email')  # Вернёт 'on' если отмечено
 
             errors = []
 
@@ -140,6 +142,10 @@ def login_view(request):
                 errors.append("Укажите пол.")
             if not password1 or not password2:
                 errors.append("Пароль и подтверждение пароля обязательны.")
+            
+            # === ПРОВЕРКА СОГЛАСИЯ НА РАССЫЛКУ ===
+            if not consent_email:
+                errors.append("Необходимо дать согласие на получение уведомлений на email.")
 
             # Проверка возраста (≥18 лет)
             if not errors and birth_date_str:
@@ -239,24 +245,38 @@ def my_appointments(request):
     """Page 'My appointments' for patient."""
     if request.user.role != 'patient':
         return redirect('main')
+    
     patient = request.user.patient_profile
-    appointments = patient.appointments.select_related('schedule__doctor', 'schedule__clinic').order_by('-schedule__date')
-    now = datetime.now()
-    tomorrow = now + timedelta(days=1)
+    now = timezone.now()
+    today = now.date()
+    current_time = now.time()
+    
+    base_qs = patient.appointments.select_related('schedule__doctor', 'schedule__clinic')
+    
+   
+    appointments_planned = base_qs.filter(
+        status=AppointmentStatus.PLANNED
+    ).filter(
+        models.Q(schedule__date__gt=today) | 
+        models.Q(schedule__date=today, schedule__time__gte=current_time)
+    ).order_by('schedule__date', 'schedule__time') 
+    
+ 
+    appointments_completed = base_qs.filter(status=AppointmentStatus.COMPLETED).order_by('-schedule__date', '-schedule__time')
+    appointments_cancelled = base_qs.filter(status=AppointmentStatus.CANCELLED).order_by('-schedule__date', '-schedule__time')
+    
+    tomorrow = today + timedelta(days=1)
     upcoming_appointments = patient.appointments.filter(
         status=AppointmentStatus.PLANNED,
-        schedule__date__gte=now.date(),
-        schedule__date__lte=tomorrow.date()
+        schedule__date__gte=today,
+        schedule__date__lte=tomorrow
     ).select_related('schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
-    patient = request.user.patient_profile
-    base_qs = patient.appointments.select_related('schedule__doctor', 'schedule__clinic')
-
+    
     return render(request, 'clinic/appointments/my_appointments.html', {
-        'appointments_planned': base_qs.filter(status=AppointmentStatus.PLANNED).order_by('-schedule__date'),
-        'appointments_completed': base_qs.filter(status=AppointmentStatus.COMPLETED).order_by('-schedule__date'),
-        'appointments_cancelled': base_qs.filter(status=AppointmentStatus.CANCELLED).order_by('-schedule__date'),
-        'appointments': appointments,
-        'tomorrow': date.today() + timedelta(days=1),
+        'appointments_planned': appointments_planned,
+        'appointments_completed': appointments_completed,
+        'appointments_cancelled': appointments_cancelled,
+        'tomorrow': tomorrow,
         'upcoming_appointments': upcoming_appointments,
     })
 
@@ -266,33 +286,56 @@ def doctor_appointments(request):
     """Page 'My appointments' for doctor."""
     if request.user.role != 'doctor':
         return redirect('main')
+    
     doctor = request.user.doctor_profile
-    appointments = Appointment.objects.filter(
-        schedule__doctor=doctor
-    ).select_related(
-        'patient', 'schedule__clinic'
-    ).order_by('schedule__date', 'schedule__time')
-
+    now = timezone.now()
+    today = now.date()
+    current_time = now.time()
+    
+    
     base_qs = Appointment.objects.filter(
         schedule__doctor=doctor
     ).select_related('patient', 'schedule__clinic', 'schedule__doctor')
-
-    now = datetime.now()
-    tomorrow = now + timedelta(days=1)
+    
+    
+    appointments_planned = base_qs.filter(
+        status=AppointmentStatus.PLANNED
+    ).filter(
+        models.Q(schedule__date__gt=today) | 
+        models.Q(schedule__date=today, schedule__time__gte=current_time)
+    ).order_by('schedule__date', 'schedule__time') 
+    
+    
+    appointments_completed = base_qs.filter(
+        status=AppointmentStatus.COMPLETED
+    ).order_by('-schedule__date', '-schedule__time')
+    
+    appointments_cancelled = base_qs.filter(
+        status=AppointmentStatus.CANCELLED
+    ).order_by('-schedule__date', '-schedule__time')
+    
+   
+    tomorrow = today + timedelta(days=1)
     upcoming_appointments_doctor = Appointment.objects.filter(
         schedule__doctor=doctor,
         status=AppointmentStatus.PLANNED,
-        schedule__date__gte=now.date(),
-        schedule__date__lte=tomorrow.date()
+        schedule__date__gte=today,
+        schedule__date__lte=tomorrow
     ).select_related('patient', 'schedule__doctor').order_by('schedule__date', 'schedule__time')[:5]
-
+    
+   
+    future_schedules = doctor.schedules.filter(
+        models.Q(date__gt=today) | 
+        models.Q(date=today, time__gte=current_time)
+    ).select_related('clinic').order_by('date', 'time')
+    
     return render(request, 'clinic/appointments/doctor_appointments.html', {
-        'appointments_planned': base_qs.filter(status=AppointmentStatus.PLANNED).order_by('schedule__date', 'schedule__time'),
-        'appointments_completed': base_qs.filter(status=AppointmentStatus.COMPLETED).order_by('-schedule__date', '-schedule__time'),
-        'appointments_cancelled': base_qs.filter(status=AppointmentStatus.CANCELLED).order_by('-schedule__date', '-schedule__time'),
-        'appointments': appointments,
+        'appointments_planned': appointments_planned,
+        'appointments_completed': appointments_completed,
+        'appointments_cancelled': appointments_cancelled,
         'doctor': doctor,
         'upcoming_appointments_doctor': upcoming_appointments_doctor,
+        'future_schedules': future_schedules,  # ← новое для фильтрации расписания
     })
 
 
@@ -742,61 +785,194 @@ def add_doctor_schedule(request):
 
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from django.utils.html import strip_tags
+from django.utils import timezone
+from ics import Calendar, Event
+from datetime import datetime, timedelta
+import pytz  # ← Импортируем pytz
 
 def send_appointment_reminders():
     """
-    Отправляет напоминания за ~24 часа до приёма.
+    Отправляет напоминания за ~24 часа до приёма + .ics для календаря.
     """
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from django.core.mail import EmailMultiAlternatives
+    from django.conf import settings
+    
     now = timezone.now()
     
-    # Ищем приёмы в диапазоне 22–26 часов от текущего момента (±2 часа для надёжности)
+    # Ищем приёмы в диапазоне 18-30 часов от текущего момента
     target_from = now + timedelta(hours=18)
     target_to = now + timedelta(hours=30)
     
-    # Убираем жёсткий фильтр по дате, чтобы не терять записи из-за таймзонов
     appointments = Appointment.objects.filter(
         status=AppointmentStatus.PLANNED,
         reminder_sent=False
     ).select_related('patient__user', 'schedule__doctor', 'schedule__clinic')
     
     sent_count = 0
-    print(f"⏰ Сейчас (UTC): {now}")
-    print(f"🔍 Ищем приёмы в диапазоне: {target_from} — {target_to}")
+    print(f"⏰ Сейчас (MSK): {timezone.localtime(now)}")
+    print(f"🔍 Ищем приёмы в диапазоне: {timezone.localtime(target_from)} — {timezone.localtime(target_to)}")
     print(f"📋 Кандидатов в БД: {appointments.count()}")
     
+    # Месяцы на русском
+    MONTHS_RU = {
+        1: 'января', 2: 'февраля', 3: 'марта', 4: 'апреля',
+        5: 'мая', 6: 'июня', 7: 'июля', 8: 'августа',
+        9: 'сентября', 10: 'октября', 11: 'ноября', 12: 'декабря'
+    }
+    
     for appt in appointments:
-        # Собираем datetime приёма и делаем его timezone-aware
+        # Создаём datetime из даты и времени
         naive_dt = datetime.combine(appt.schedule.date, appt.schedule.time)
-        appt_dt = timezone.make_aware(naive_dt)
+        # Делаем timezone-aware с московским временем (UTC+3)
+        appt_dt = timezone.make_aware(naive_dt, timezone.get_fixed_timezone(180))
         
-        print(f"📅 Проверка: {appt.patient.user.email} → {appt_dt}")
+        print(f"📅 Проверка: {appt.patient.user.email} → {appt_dt} (MSK)")
         
         if target_from <= appt_dt <= target_to:
             try:
-                send_mail(
-                    subject="Напоминание о приёме в MEDCLINIC",
-                    message=(
-                        f"Здравствуйте, {appt.patient.full_name}!\n\n"
-                        f"Напоминаем о вашей записи:\n"
-                        f"👨‍⚕️ Врач: {appt.schedule.doctor.full_name}\n"
-                        f"📅 Дата: {appt.schedule.date}\n"
-                        f"⏰ Время: {appt.schedule.time}\n"
-                        f"🏥 Клиника: {appt.schedule.clinic.name}\n"
-                        f"📍 Адрес: {appt.schedule.clinic.address}\n\n"
-                        f"Пожалуйста, приходите вовремя.\n"
-                        f"С уважением, команда MEDCLINIC"
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[appt.patient.user.email],
-                    fail_silently=False,
+                # === ФОРМАТИРОВАНИЕ ДАТЫ ===
+                day = appt.schedule.date.day
+                month = MONTHS_RU[appt.schedule.date.month]
+                year = appt.schedule.date.year
+                formatted_date = f"{day} {month} {year} года"
+                formatted_time = appt.schedule.time.strftime('%H:%M')
+                
+                # Время окончания (через 1 час)
+                end_time = (datetime.combine(appt.schedule.date, appt.schedule.time) + timedelta(hours=1)).time()
+                formatted_end_time = end_time.strftime('%H:%M')
+                
+                # === ССЫЛКА НА ЯНДЕКС.КАРТЫ ===
+                clinic_name_encoded = appt.schedule.clinic.name.replace(' ', '+')
+                clinic_address_encoded = appt.schedule.clinic.address.replace(' ', '+')
+                yandex_maps_url = f"https://yandex.ru/maps/?text={clinic_name_encoded}+{clinic_address_encoded}"
+                
+                # === ГЕНЕРАЦИЯ .ics ФАЙЛА ВРУЧНУЮ ===
+                # Форматируем время для .ics (YYYYMMDDTHHMMSS) — БЕЗ часового пояса!
+                dt_start = appt.schedule.date.strftime('%Y%m%d') + 'T' + appt.schedule.time.strftime('%H%M%S')
+                dt_end = appt.schedule.date.strftime('%Y%m%d') + 'T' + end_time.strftime('%H%M%S')
+                
+                # ВАЖНО: без отступов в начале строк и БЕЗ METHOD:REQUEST!
+                ics_content = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//MEDCLINIC//Appointment Reminder//RU
+CALSCALE:GREGORIAN
+BEGIN:VEVENT
+DTSTART:{dt_start}
+DTEND:{dt_end}
+DTSTAMP:{timezone.now().strftime('%Y%m%dT%H%M%SZ')}
+UID:appointment-{appt.id}@medclinic.ru
+SUMMARY:Приём: {appt.schedule.doctor.full_name} — MEDCLINIC
+DESCRIPTION:Пациент: {appt.patient.full_name}\\nВрач: {appt.schedule.doctor.full_name} ({appt.schedule.doctor.specialization})\\nКлиника: {appt.schedule.clinic.name}\\nТелефон: {appt.schedule.clinic.phone}\\nВремя приёма: {formatted_time} (МСК)
+LOCATION:{appt.schedule.clinic.address}
+STATUS:CONFIRMED
+SEQUENCE:0
+TRANSP:OPAQUE
+END:VEVENT
+END:VCALENDAR
+"""
+                
+                # 🔍 Отладка: выводим .ics в консоль
+                print(f"📎 .ics файл:\n{ics_content}")
+                
+                # === HTML-ШАБЛОН ПИСЬМА ===
+                html_message = f"""
+                <!DOCTYPE html>
+                <html lang="ru">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Напоминание о приёме</title>
+                </head>
+                <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f6f8;">
+                    <div style="max-width: 600px; margin: 20px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                        <div style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 24px 20px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 22px; font-weight: 700;">🏥 MEDCLINIC</h1>
+                            <p style="margin: 8px 0 0; opacity: 0.95; font-size: 14px;">Напоминание о предстоящем приёме</p>
+                        </div>
+                        <div style="padding: 24px 20px;">
+                            <p style="font-size: 16px; margin-bottom: 20px;">Здравствуйте, <strong>{appt.patient.full_name}</strong>!</p>
+                            <p>Напоминаем, что у вас запланирован приём:</p>
+                            
+                            <div style="background: #f8f9fa; border-left: 4px solid #007bff; border-radius: 8px; padding: 16px; margin: 20px 0;">
+                                <h3 style="margin: 0 0 12px; color: #007bff; font-size: 18px;">📋 Детали записи</h3>
+                                <p style="margin: 8px 0;"><strong>👨‍️ Врач:</strong> {appt.schedule.doctor.full_name}<br>
+                                <small style="color:#666">{appt.schedule.doctor.specialization}</small></p>
+                                <p style="margin: 8px 0;"><strong>📅 Дата:</strong> {formatted_date}</p>
+                                <p style="margin: 8px 0;"><strong>⏰ Время:</strong> {formatted_time} – {formatted_end_time} <small style="color:#999">(МСК)</small></p>
+                                <p style="margin: 8px 0;"><strong>🏥 Клиника:</strong> {appt.schedule.clinic.name}</p>
+                                <p style="margin: 8px 0;"><strong>📍 Адрес:</strong> {appt.schedule.clinic.address}</p>
+                                <p style="margin: 8px 0;"><strong>📞 Телефон:</strong> {appt.schedule.clinic.phone}</p>
+                            </div>
+                            
+                            <div style="margin: 24px 0; text-align: center;">
+                                <a href="{yandex_maps_url}" style="display: inline-block; padding: 12px 24px; margin: 6px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; background: #007bff; color: white;">🗺️ Построить маршрут</a>
+                                <p style="display:block; margin:12px 0; font-size:13px; color:#666">📎 Файл для добавления в календарь прикреплён к письму</p>
+                            </div>
+                            
+                            <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:12px; font-size:14px;">
+                                <strong>💡 Совет:</strong> Пожалуйста, приходите за 10–15 минут до начала приёма. Не забудьте паспорт и полис.
+                            </div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 16px 20px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #eee;">
+                            <p>С уважением,<br><strong>Команда медицинского центра MEDCLINIC</strong></p>
+                            <p style="margin:8px 0 0;">
+                                <a href="tel:+78005553535" style="color: #007bff; text-decoration: none;">📞 +7 (800) 555-35-35</a> • 
+                                <a href="mailto:m3dclinick@ya.ru" style="color: #007bff; text-decoration: none;">✉️ m3dclinick@ya.ru</a>
+                            </p>
+                            <p style="margin:12px 0 0; font-size:11px; color:#999;">
+                                Это письмо отправлено автоматически. Пожалуйста, не отвечайте на него.
+                            </p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+                
+                # === ТЕКСТОВАЯ ВЕРСИЯ ===
+                text_message = (
+                    f"Здравствуйте, {appt.patient.full_name}!\n\n"
+                    f"Напоминаем о вашей записи в медицинский центр MEDCLINIC:\n\n"
+                    f"👨‍⚕️ Врач: {appt.schedule.doctor.full_name}\n"
+                    f"   Специализация: {appt.schedule.doctor.specialization}\n\n"
+                    f"📅 Дата: {formatted_date}\n"
+                    f"⏰ Время: {formatted_time} – {formatted_end_time} (МСК)\n\n"
+                    f"🏥 Клиника: {appt.schedule.clinic.name}\n"
+                    f"📍 Адрес: {appt.schedule.clinic.address}\n"
+                    f"📞 Телефон: {appt.schedule.clinic.phone}\n\n"
+                    f"Построить маршрут:\n{yandex_maps_url}\n\n"
+                    f"📎 Файл для добавления в календарь прикреплён к письму.\n\n"
+                    f"💡 Пожалуйста, приходите за 10–15 минут до начала приёма.\n"
+                    f"   Не забудьте паспорт и полис.\n\n"
+                    f"С уважением,\n"
+                    f"Команда медицинского центра MEDCLINIC\n"
+                    f"📞 +7 (800) 555-35-35\n"
+                    f"✉️ m3dclinick@ya.ru"
                 )
+                
+                # === ОТПРАВКА ПИСЬМА ===
+                email = EmailMultiAlternatives(
+                    subject=f"🏥 Напоминание о приёме {formatted_date} в {formatted_time}",
+                    body=text_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    to=[appt.patient.user.email],
+                )
+                email.attach_alternative(html_message, "text/html")
+                email.attach(f'priem_{appt.id}.ics', ics_content.encode('utf-8'), 'text/calendar')
+                email.send()
+                
                 appt.reminder_sent = True
                 appt.save(update_fields=['reminder_sent'])
                 sent_count += 1
                 print(f"✅ Отправлено: {appt.patient.user.email}")
+                
             except Exception as e:
                 print(f"❌ Ошибка для {appt.id}: {e}")
+                import traceback
+                traceback.print_exc()
     
     print(f"📬 Итого отправлено: {sent_count}")
 

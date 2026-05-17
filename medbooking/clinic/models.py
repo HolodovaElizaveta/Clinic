@@ -100,7 +100,7 @@ class Appointment(models.Model):
     status = models.CharField(max_length=20, choices=AppointmentStatus.choices, default=AppointmentStatus.PLANNED)
     notes = models.TextField(blank=True, null=True)
     reminder_sent = models.BooleanField(default=False)
-
+    survey_sent = models.BooleanField(default=False)
     @property
     def datetime(self):
         from datetime import datetime

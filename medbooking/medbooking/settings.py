@@ -115,7 +115,8 @@ AUTH_USER_MODEL = 'clinic.User'
 
 LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'  # ← Ваш локальный часовой пояс
+USE_TZ = True  # ← Оставьте True, Django будет корректно конвертировать
 
 USE_I18N = True
 
@@ -152,10 +153,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.ru'
 EMAIL_PORT = 465
 EMAIL_USE_SSL = True
-EMAIL_HOST_USER = 'zabolotskaya.uliana@ya.ru'
-EMAIL_HOST_PASSWORD = 'xbkyluconrtlrzav'  # Ваш пароль приложения
-DEFAULT_FROM_EMAIL = 'zabolotskaya.uliana@ya.ru'
-SERVER_EMAIL = 'zabolotskaya.uliana@ya.ru'
+EMAIL_HOST_USER = 'm3dclinick@ya.ru'
+EMAIL_HOST_PASSWORD = 'bhfvdpsneehhzwpb'  
+DEFAULT_FROM_EMAIL = 'm3dclinick@ya.ru'
+SERVER_EMAIL = 'm3dclinick@ya.ru'
 
 CACHES = {
     'default': {

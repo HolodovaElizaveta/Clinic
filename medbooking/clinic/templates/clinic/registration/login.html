@@ -88,6 +88,17 @@
                 <label for="reg_password2">Повторите пароль <span class="required">*</span></label>
                 <input type="password" name="password2" id="reg_password2" class="form-control" required>
             </div>
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" name="consent_email" id="consent_email" class="form-check-input" required>
+                    <label for="consent_email" class="form-check-label">
+                        Я согласен(на) на получение уведомлений и напоминаний на указанный email <span class="required">*</span>
+                    </label>
+                </div>
+                <small class="form-text text-muted">
+                    Без согласия мы не сможем отправлять вам напоминания о приёмах.
+                </small>
+            </div>
 
             <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
         </form>
